@@ -53,19 +53,19 @@ def dwtn(data, wavelet, mode='symmetric', axes=None):
 
 
 def idwtn(coeffs, wavelet, mode='symmetric', axes=None):
-    """Single-level nD IDWT."""
-    keys = sorted(coeffs.keys())
-    ndim = len(keys[0])
+    """Single-level nD IDWT. Reverses dwtn by recombining 'a'/'d' pairs along each axis."""
+    ndim = len(next(iter(coeffs)))
     if axes is None:
         axes = tuple(range(ndim))
     w = get_wavelet(wavelet)
-    for i, axis in enumerate(reversed(axes)):
-        idx = ndim - 1 - i
-        pairs = {}
+    for axis_pos, axis in zip(reversed(range(len(axes))), reversed(axes)):
+        # Group subbands that differ only at axis_pos into (approx, detail) pairs
+        grouped = {}
         for key, arr in coeffs.items():
-            pairs.setdefault(key[:idx] + key[idx + 1:], {})[key[idx]] = arr
-        coeffs = {b: _idwt_axis(p['a'], p['d'], w, mode, axis)
-                  for b, p in sorted(pairs.items())}
+            rest = key[:axis_pos] + key[axis_pos + 1:]
+            grouped.setdefault(rest, {})[key[axis_pos]] = arr
+        coeffs = {rest: _idwt_axis(ad['a'], ad['d'], w, mode, axis)
+                  for rest, ad in sorted(grouped.items())}
     return coeffs['']
 
 

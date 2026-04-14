@@ -55,10 +55,11 @@ def test_perfect_reconstruction_1d(wavelet, N, mode):
 @pytest.mark.parametrize('wavelet', ['haar', 'db4', 'sym4'])
 @pytest.mark.parametrize('shape', [(16, 16), (15, 17), (8, 8, 8)])
 @pytest.mark.parametrize('level', [1, 2])
-def test_wavedecn_matches_pywt(wavelet, shape, level):
+@pytest.mark.parametrize('mode', MODES)
+def test_wavedecn_matches_pywt(wavelet, shape, level, mode):
     x_np = np.random.RandomState(0).randn(*shape)
-    coeffs_jax = jaxwt.wavedecn(jnp.array(x_np), wavelet, level=level)
-    coeffs_pywt = pywt.wavedecn(x_np, wavelet, level=level)
+    coeffs_jax = jaxwt.wavedecn(jnp.array(x_np), wavelet, mode=mode, level=level)
+    coeffs_pywt = pywt.wavedecn(x_np, wavelet, mode=mode, level=level)
     np.testing.assert_allclose(np.array(coeffs_jax.approx), coeffs_pywt[0], atol=ATOL)
     for jax_d, pywt_d in zip(coeffs_jax.details, coeffs_pywt[1:]):
         for key in jax_d:
@@ -69,10 +70,11 @@ def test_wavedecn_matches_pywt(wavelet, shape, level):
 
 @pytest.mark.parametrize('wavelet', ['haar', 'db4', 'sym4'])
 @pytest.mark.parametrize('shape', [(16, 16), (15, 17), (32, 32, 32), (15, 17, 19)])
-def test_perfect_reconstruction_nd(wavelet, shape):
+@pytest.mark.parametrize('mode', MODES)
+def test_perfect_reconstruction_nd(wavelet, shape, mode):
     x = jnp.array(np.random.RandomState(0).randn(*shape))
-    coeffs = jaxwt.wavedecn(x, wavelet)
-    rec = jaxwt.waverecn(coeffs, wavelet)
+    coeffs = jaxwt.wavedecn(x, wavelet, mode=mode)
+    rec = jaxwt.waverecn(coeffs, wavelet, mode=mode)
     np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
 
 
