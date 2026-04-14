@@ -4,3 +4,4 @@ from jaxwt._dwt import dwt, idwt, dwt_max_level, downcoef, upcoef
 from jaxwt._multidim import (dwtn, idwtn, wavedecn, waverecn, WaveletCoeffs,
                               dwt2, idwt2, wavedec2, waverec2)
 from jaxwt._swt import swt, iswt, swt_max_level
+from jaxwt._fswt import fswavedecn, fswaverecn, FswavedecnResult
