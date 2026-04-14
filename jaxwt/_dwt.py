@@ -35,7 +35,7 @@ def _upc(c, f):
     """Upsample-convolve: even/odd filter splitting."""
     e = jnp.convolve(c, f[::2], mode='valid')
     o = jnp.convolve(c, f[1::2], mode='valid')
-    return jnp.empty(2 * e.shape[0]).at[::2].set(e).at[1::2].set(o)
+    return jnp.stack([e, o], axis=1).reshape(-1)
 
 
 def _upc_per(c, f):

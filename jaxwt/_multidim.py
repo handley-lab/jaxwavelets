@@ -13,7 +13,7 @@ class WaveletCoeffs:
         self.approx = approx
         self.details = details
         self.shapes = shapes
-        self.axes = axes
+        self.axes = tuple(axes)
 
 
 jax.tree_util.register_pytree_node(
@@ -42,8 +42,7 @@ def _idwt_axis(cA, cD, w, mode, axis):
 
 def dwtn(data, wavelet, mode='symmetric', axes=None):
     """Single-level nD DWT."""
-    if axes is None:
-        axes = tuple(range(data.ndim))
+    axes = tuple(range(data.ndim)) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     coeffs = [('', data)]
     for axis in axes:
@@ -54,12 +53,9 @@ def dwtn(data, wavelet, mode='symmetric', axes=None):
 
 def idwtn(coeffs, wavelet, mode='symmetric', axes=None):
     """Single-level nD IDWT. Reverses dwtn by recombining 'a'/'d' pairs along each axis."""
-    ndim = len(next(iter(coeffs)))
-    if axes is None:
-        axes = tuple(range(ndim))
+    axes = tuple(range(len(next(iter(coeffs))))) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     for axis_pos, axis in zip(reversed(range(len(axes))), reversed(axes)):
-        # Group subbands that differ only at axis_pos into (approx, detail) pairs
         grouped = {}
         for key, arr in coeffs.items():
             rest = key[:axis_pos] + key[axis_pos + 1:]
@@ -71,8 +67,7 @@ def idwtn(coeffs, wavelet, mode='symmetric', axes=None):
 
 def wavedecn(data, wavelet, mode='symmetric', level=None, axes=None):
     """Multilevel nD DWT."""
-    if axes is None:
-        axes = tuple(range(data.ndim))
+    axes = tuple(range(data.ndim)) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     if level is None:
         level = dwt_max_level(min(data.shape[ax] for ax in axes), w.dec_lo.shape[0])
@@ -91,8 +86,7 @@ def wavedecn(data, wavelet, mode='symmetric', level=None, axes=None):
 def waverecn(coeffs, wavelet, mode='symmetric'):
     """Multilevel nD IDWT."""
     w = get_wavelet(wavelet)
-    axes = coeffs.axes
-    a_key = 'a' * len(axes)
+    axes, a_key = coeffs.axes, 'a' * len(coeffs.axes)
     a = coeffs.approx
     for d, shape in zip(coeffs.details, coeffs.shapes):
         d_shape = next(iter(d.values())).shape
