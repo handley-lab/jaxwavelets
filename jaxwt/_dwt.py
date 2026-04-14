@@ -31,6 +31,37 @@ def idwt(cA, cD, wavelet, mode='symmetric'):
     return _upc(cA, w.rec_lo) + _upc(cD, w.rec_hi)
 
 
+def downcoef(part, data, wavelet, mode='symmetric', level=1):
+    """Partial DWT: extract single subband at the given decomposition level.
+
+    'a': low-pass level times. 'd': low-pass level-1 times, then high-pass once.
+    """
+    w = get_wavelet(wavelet)
+    for _ in range(level - 1):
+        data, _ = dwt(data, w, mode)
+    cA, cD = dwt(data, w, mode)
+    return cA if part == 'a' else cD
+
+
+def upcoef(part, coeffs, wavelet, level=1, take=0):
+    """Partial IDWT: reconstruct from single subband ('a' or 'd') for level levels.
+
+    part='a': rec_lo at every level. part='d': rec_hi first, then rec_lo.
+    """
+    w = get_wavelet(wavelet)
+    rec = _upcoef_step(coeffs, w.rec_lo if part == 'a' else w.rec_hi)
+    for _ in range(level - 1):
+        rec = _upcoef_step(rec, w.rec_lo)
+    if take > 0:
+        rec = rec[len(rec) // 2 - take // 2:len(rec) // 2 + take // 2 + take % 2]
+    return rec
+
+
+def _upcoef_step(c, f):
+    """Single upsample-by-2 then full convolve."""
+    return jnp.convolve(jnp.zeros(2 * c.shape[0] - 1).at[::2].set(c), f)
+
+
 def _upc(c, f):
     """Upsample-convolve: even/odd filter splitting."""
     e = jnp.convolve(c, f[::2], mode='valid')

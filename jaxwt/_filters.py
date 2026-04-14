@@ -17,6 +17,21 @@ def get_wavelet(wavelet):
     return Wavelet(*(jnp.array(f) for f in FILTER_BANKS[wavelet]))
 
 
+def qmf(filt):
+    """Quadrature mirror filter: reverse, then negate odd indices."""
+    f = jnp.array(filt)[::-1]
+    return f.at[1::2].multiply(-1)
+
+
+def orthogonal_filter_bank(scaling_filter):
+    """Derive (dec_lo, dec_hi, rec_lo, rec_hi) from a scaling filter."""
+    rec_lo = jnp.sqrt(2) * jnp.array(scaling_filter) / jnp.sum(jnp.array(scaling_filter))
+    dec_lo = rec_lo[::-1]
+    rec_hi = qmf(rec_lo)
+    dec_hi = rec_hi[::-1]
+    return dec_lo, dec_hi, rec_lo, rec_hi
+
+
 FILTER_BANKS = {
     'haar': (
         (0.7071067811865476, 0.7071067811865476),
