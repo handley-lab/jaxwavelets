@@ -4,17 +4,17 @@ import jax.numpy as jnp
 
 
 class Wavelet(NamedTuple):
-    """Filter bank for a discrete wavelet."""
     dec_lo: jnp.ndarray
     dec_hi: jnp.ndarray
     rec_lo: jnp.ndarray
     rec_hi: jnp.ndarray
 
 
-def get_wavelet(name):
-    """Look up a wavelet by name, returning a Wavelet NamedTuple of jnp arrays."""
-    bank = FILTER_BANKS[name]
-    return Wavelet(*(jnp.array(f) for f in bank))
+def get_wavelet(wavelet):
+    """Return a Wavelet, looking up by name if needed."""
+    if isinstance(wavelet, Wavelet):
+        return wavelet
+    return Wavelet(*(jnp.array(f) for f in FILTER_BANKS[wavelet]))
 
 
 FILTER_BANKS = {

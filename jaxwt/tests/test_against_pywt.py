@@ -45,7 +45,7 @@ def test_idwt_matches_pywt(wavelet, N):
 def test_perfect_reconstruction_1d(wavelet, N, mode):
     x = jnp.array(np.random.RandomState(0).randn(N))
     cA, cD = jaxwt.dwt(x, wavelet, mode)
-    rec = jaxwt.idwt(cA, cD, wavelet, mode, output_length=N)
+    rec = jaxwt.idwt(cA, cD, wavelet, mode)[:N]
     np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
 
 
