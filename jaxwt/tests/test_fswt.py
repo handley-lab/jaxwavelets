@@ -40,6 +40,15 @@ def test_fswaverecn_roundtrip(wavelet, shape):
     np.testing.assert_allclose(np.array(rec[tuple(slice(s) for s in shape)]), np.array(x), atol=ATOL)
 
 
+@pytest.mark.parametrize('wavelet', WAVELETS)
+def test_fswavedecn_coeffs_values_match_pywt(wavelet):
+    """Verify packed coefficient values match pywt, not just shapes."""
+    x_np = np.random.RandomState(0).randn(16, 16)
+    r_jax = fswavedecn(jnp.array(x_np), wavelet, levels=2)
+    r_pywt = pywt.fswavedecn(x_np, wavelet, levels=2)
+    np.testing.assert_allclose(np.array(r_jax.coeffs), r_pywt.coeffs, atol=ATOL)
+
+
 def test_fswt_jit():
     x = jnp.array(np.random.RandomState(0).randn(16, 16))
     f = jax.jit(lambda x: fswaverecn(fswavedecn(x, 'haar', levels=2)))
