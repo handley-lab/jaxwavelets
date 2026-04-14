@@ -1,19 +1,73 @@
 """nD wavelet transforms."""
-from typing import NamedTuple
+import jax
 import jax.numpy as jnp
 from jaxwt._dwt import dwt, idwt, dwt_max_level
 from jaxwt._filters import get_wavelet
 
 
-class WaveletCoeffs(NamedTuple):
-    """Multilevel wavelet decomposition coefficients."""
-    approx: jnp.ndarray
-    details: tuple
-    shapes: tuple  # original shapes at each level for reconstruction
+class WaveletCoeffs:
+    """Multilevel wavelet decomposition coefficients.
+
+    Custom pytree: approx and details are traced children;
+    shapes is static aux_data (not traced/vmapped).
+    """
+
+    def __init__(self, approx, details, shapes):
+        self.approx = approx
+        self.details = details
+        self.shapes = shapes
+
+    def __repr__(self):
+        return f"WaveletCoeffs(approx={self.approx.shape}, levels={len(self.details)})"
+
+
+def _wc_flatten(wc):
+    children = (wc.approx, wc.details)
+    aux = wc.shapes
+    return children, aux
+
+
+def _wc_unflatten(aux, children):
+    return WaveletCoeffs(children[0], children[1], aux)
+
+
+jax.tree_util.register_pytree_node(WaveletCoeffs, _wc_flatten, _wc_unflatten)
+
+
+def _match_coeff_dims(a, d_dict):
+    """Truncate approx to match detail shapes (off by 1 from odd-length signals)."""
+    d = next(iter(d_dict.values()))
+    return a[tuple(slice(s) for s in d.shape)]
+
+
+def _dwt_axis(x, wavelet, mode, axis):
+    """Apply 1D DWT along one axis of an nD array.
+
+    Uses moveaxis + vmap to map the 1D transform across all other axes.
+    This is structural vectorisation (part of the nD algorithm), not batching.
+    """
+    x = jnp.moveaxis(x, axis, -1)
+    shape = x.shape[:-1]
+    x_flat = x.reshape(-1, x.shape[-1])
+    cA_flat, cD_flat = jax.vmap(lambda row: dwt(row, wavelet, mode))(x_flat)
+    cA = jnp.moveaxis(cA_flat.reshape(shape + (-1,)), -1, axis)
+    cD = jnp.moveaxis(cD_flat.reshape(shape + (-1,)), -1, axis)
+    return cA, cD
+
+
+def _idwt_axis(cA, cD, wavelet, mode, axis, output_length=None):
+    """Apply 1D IDWT along one axis of an nD array."""
+    cA = jnp.moveaxis(cA, axis, -1)
+    cD = jnp.moveaxis(cD, axis, -1)
+    shape = cA.shape[:-1]
+    cA_flat = cA.reshape(-1, cA.shape[-1])
+    cD_flat = cD.reshape(-1, cD.shape[-1])
+    rec_flat = jax.vmap(lambda a, d: idwt(a, d, wavelet, mode, output_length))(cA_flat, cD_flat)
+    return jnp.moveaxis(rec_flat.reshape(shape + (-1,)), -1, axis)
 
 
 def dwtn(data, wavelet, mode='symmetric', axes=None):
-    """Single-level nD DWT. Returns dict of subbands keyed by 'a'/'d' strings."""
+    """Single-level nD DWT."""
     if axes is None:
         axes = tuple(range(data.ndim))
     w = get_wavelet(wavelet) if isinstance(wavelet, str) else wavelet
@@ -28,25 +82,25 @@ def dwtn(data, wavelet, mode='symmetric', axes=None):
     return dict(sorted(coeffs))
 
 
-def idwtn(coeffs, wavelet, mode='symmetric', axes=None):
+def idwtn(coeffs, wavelet, mode='symmetric', axes=None, target_shape=None):
     """Single-level nD IDWT."""
     keys = sorted(coeffs.keys())
     ndim = len(keys[0])
     if axes is None:
         axes = tuple(range(ndim))
     w = get_wavelet(wavelet) if isinstance(wavelet, str) else wavelet
-    # Reverse axis order for reconstruction
+
     for i, axis in enumerate(reversed(axes)):
         axis_idx = ndim - 1 - i
+        output_length = target_shape[axis] if target_shape is not None else None
         pairs = {}
         for key, arr in coeffs.items():
             base = key[:axis_idx] + key[axis_idx + 1:]
-            if base not in pairs:
-                pairs[base] = {}
-            pairs[base][key[axis_idx]] = arr
-        coeffs = {}
-        for base, pair in sorted(pairs.items()):
-            coeffs[base] = _idwt_axis(pair['a'], pair['d'], w, mode, axis)
+            pairs.setdefault(base, {})[key[axis_idx]] = arr
+        coeffs = {
+            base: _idwt_axis(pair['a'], pair['d'], w, mode, axis, output_length)
+            for base, pair in sorted(pairs.items())
+        }
     return coeffs['']
 
 
@@ -77,46 +131,13 @@ def wavedecn(data, wavelet, mode='symmetric', level=None, axes=None):
 def waverecn(coeffs, wavelet, mode='symmetric', axes=None):
     """Multilevel nD IDWT."""
     w = get_wavelet(wavelet) if isinstance(wavelet, str) else wavelet
+    if axes is None:
+        axes = tuple(range(len(next(iter(coeffs.details[0].keys())))))
+
     a = coeffs.approx
     for detail_dict, target_shape in zip(coeffs.details, coeffs.shapes):
-        # Match approx shape to detail shape (truncate if off by 1)
-        d_coeff = next(iter(detail_dict.values()))
-        a = a[tuple(slice(s) for s in d_coeff.shape)]
-        a_key = 'a' * len(next(iter(detail_dict.keys())))
+        a = _match_coeff_dims(a, detail_dict)
+        a_key = 'a' * len(axes)
         all_coeffs = {a_key: a, **detail_dict}
-        if axes is None:
-            axes = tuple(range(a.ndim))
-        a = idwtn(all_coeffs, w, mode, axes)
-        # Trim to original shape at this level
-        a = a[tuple(slice(s) for s in target_shape)]
+        a = idwtn(all_coeffs, w, mode, axes, target_shape)
     return a
-
-
-def _dwt_axis(x, wavelet, mode, axis):
-    """Apply 1D DWT along a single axis of an nD array."""
-    x = jnp.moveaxis(x, axis, -1)
-    shape = x.shape
-    x_flat = x.reshape(-1, shape[-1])
-    cA_list = []
-    cD_list = []
-    for i in range(x_flat.shape[0]):
-        a, d = dwt(x_flat[i], wavelet, mode)
-        cA_list.append(a)
-        cD_list.append(d)
-    cA = jnp.stack(cA_list).reshape(shape[:-1] + (-1,))
-    cD = jnp.stack(cD_list).reshape(shape[:-1] + (-1,))
-    return jnp.moveaxis(cA, -1, axis), jnp.moveaxis(cD, -1, axis)
-
-
-def _idwt_axis(cA, cD, wavelet, mode, axis):
-    """Apply 1D IDWT along a single axis of an nD array."""
-    cA = jnp.moveaxis(cA, axis, -1)
-    cD = jnp.moveaxis(cD, axis, -1)
-    shape = cA.shape
-    cA_flat = cA.reshape(-1, shape[-1])
-    cD_flat = cD.reshape(-1, shape[-1])
-    rec_list = []
-    for i in range(cA_flat.shape[0]):
-        rec_list.append(idwt(cA_flat[i], cD_flat[i], wavelet, mode))
-    rec = jnp.stack(rec_list).reshape(shape[:-1] + (-1,))
-    return jnp.moveaxis(rec, -1, axis)
