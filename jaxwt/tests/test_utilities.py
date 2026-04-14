@@ -87,6 +87,55 @@ def test_upcoef_jit():
 
 # --- upcoef take ---
 
+# --- 2D wrappers ---
+
+@pytest.mark.parametrize('wavelet', ['haar', 'db4', 'sym4'])
+@pytest.mark.parametrize('shape', [(16, 16), (15, 17)])
+def test_dwt2_matches_pywt(wavelet, shape):
+    x_np = np.random.RandomState(0).randn(*shape)
+    cA_j, (cH_j, cV_j, cD_j) = jaxwt.dwt2(jnp.array(x_np), wavelet)
+    cA_p, (cH_p, cV_p, cD_p) = pywt.dwt2(x_np, wavelet)
+    np.testing.assert_allclose(np.array(cA_j), cA_p, atol=ATOL)
+    np.testing.assert_allclose(np.array(cH_j), cH_p, atol=ATOL)
+    np.testing.assert_allclose(np.array(cV_j), cV_p, atol=ATOL)
+    np.testing.assert_allclose(np.array(cD_j), cD_p, atol=ATOL)
+
+
+@pytest.mark.parametrize('wavelet', ['haar', 'db4', 'sym4'])
+@pytest.mark.parametrize('shape', [(16, 16), (15, 17)])
+def test_idwt2_roundtrip(wavelet, shape):
+    x = jnp.array(np.random.RandomState(0).randn(*shape))
+    coeffs = jaxwt.dwt2(x, wavelet)
+    rec = jaxwt.idwt2(coeffs, wavelet)
+    np.testing.assert_allclose(np.array(rec[:shape[0], :shape[1]]), np.array(x), atol=ATOL)
+
+
+@pytest.mark.parametrize('wavelet', ['haar', 'db4', 'sym4'])
+@pytest.mark.parametrize('shape', [(16, 16), (15, 17)])
+@pytest.mark.parametrize('level', [1, 2])
+def test_wavedec2_matches_pywt(wavelet, shape, level):
+    x_np = np.random.RandomState(0).randn(*shape)
+    coeffs_j = jaxwt.wavedec2(jnp.array(x_np), wavelet, level=level)
+    coeffs_p = pywt.wavedec2(x_np, wavelet, level=level)
+    np.testing.assert_allclose(np.array(coeffs_j[0]), coeffs_p[0], atol=ATOL)
+    for (cH_j, cV_j, cD_j), (cH_p, cV_p, cD_p) in zip(coeffs_j[1:], coeffs_p[1:]):
+        np.testing.assert_allclose(np.array(cH_j), cH_p, atol=ATOL)
+        np.testing.assert_allclose(np.array(cV_j), cV_p, atol=ATOL)
+        np.testing.assert_allclose(np.array(cD_j), cD_p, atol=ATOL)
+
+
+@pytest.mark.parametrize('wavelet', ['haar', 'db4', 'sym4'])
+@pytest.mark.parametrize('shape', [(16, 16), (15, 17)])
+def test_waverec2_roundtrip(wavelet, shape):
+    x = jnp.array(np.random.RandomState(0).randn(*shape))
+    coeffs = jaxwt.wavedec2(x, wavelet)
+    rec = jaxwt.waverec2(coeffs, wavelet)
+    # waverec2 may produce larger output for odd shapes (matches pywt behavior)
+    np.testing.assert_allclose(np.array(rec[tuple(slice(s) for s in shape)]), np.array(x), atol=ATOL)
+
+
+# --- upcoef take ---
+
 @pytest.mark.parametrize('wavelet', WAVELETS)
 def test_upcoef_take(wavelet):
     x_np = np.random.RandomState(0).randn(16)

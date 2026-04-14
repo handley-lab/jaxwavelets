@@ -93,3 +93,45 @@ def waverecn(coeffs, wavelet, mode='symmetric'):
         a = idwtn({a_key: a[tuple(slice(s) for s in d_shape)], **d}, w, mode, axes)
         a = a[tuple(slice(s) for s in shape)]
     return a
+
+
+# --- 2D convenience wrappers ---
+
+def dwt2(data, wavelet, mode='symmetric', axes=(-2, -1)):
+    """2D DWT. Returns (cA, (cH, cV, cD))."""
+    c = dwtn(data, wavelet, mode, axes)
+    return c['aa'], (c['da'], c['ad'], c['dd'])
+
+
+def idwt2(coeffs, wavelet, mode='symmetric', axes=(-2, -1)):
+    """2D IDWT from (cA, (cH, cV, cD)) format."""
+    cA, (cH, cV, cD) = coeffs
+    return idwtn({'aa': cA, 'da': cH, 'ad': cV, 'dd': cD}, wavelet, mode, axes)
+
+
+def wavedec2(data, wavelet, mode='symmetric', level=None, axes=(-2, -1)):
+    """Multilevel 2D DWT. Returns [cA, (cH,cV,cD)_n, ..., (cH,cV,cD)_1]."""
+    axes = tuple(axes)
+    w = get_wavelet(wavelet)
+    if level is None:
+        level = dwt_max_level(min(data.shape[ax] for ax in axes), w.dec_lo.shape[0])
+    result = []
+    a = data
+    for _ in range(level):
+        a, ds = dwt2(a, w, mode, axes)
+        result.append(ds)
+    result.append(a)
+    result.reverse()
+    return result
+
+
+def waverec2(coeffs, wavelet, mode='symmetric', axes=(-2, -1)):
+    """Multilevel 2D IDWT from [cA, (cH,cV,cD)_n, ..., (cH,cV,cD)_1]."""
+    w = get_wavelet(wavelet)
+    a = coeffs[0]
+    for cH, cV, cD in coeffs[1:]:
+        # Trim approx to detail shape
+        d_shape = cH.shape
+        a = a[tuple(slice(s) for s in d_shape)]
+        a = idwt2((a, (cH, cV, cD)), w, mode, axes)
+    return a
