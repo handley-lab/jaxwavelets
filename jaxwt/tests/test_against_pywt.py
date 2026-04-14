@@ -10,7 +10,7 @@ from functools import partial
 import jaxwt
 
 WAVELETS = ['haar', 'db2', 'db4', 'db8', 'sym4', 'sym8', 'coif2', 'coif4']
-MODES = ['symmetric', 'reflect']
+MODES = ['symmetric', 'reflect', 'periodization']
 ATOL = 1e-11
 
 
@@ -31,12 +31,13 @@ def test_dwt_matches_pywt(wavelet, N, mode):
 
 @pytest.mark.parametrize('wavelet', WAVELETS)
 @pytest.mark.parametrize('N', [2, 3, 4, 7, 8, 15, 16, 32])
-def test_idwt_matches_pywt(wavelet, N):
+@pytest.mark.parametrize('mode', MODES)
+def test_idwt_matches_pywt(wavelet, N, mode):
     x_np = np.random.RandomState(0).randn(N)
-    cA_pywt, cD_pywt = pywt.dwt(x_np, wavelet)
-    rec_pywt = pywt.idwt(cA_pywt, cD_pywt, wavelet)
-    rec_jax = jaxwt.idwt(jnp.array(cA_pywt), jnp.array(cD_pywt), wavelet)
-    np.testing.assert_allclose(np.array(rec_jax), rec_pywt, atol=ATOL)
+    cA_pywt, cD_pywt = pywt.dwt(x_np, wavelet, mode)
+    rec_pywt = pywt.idwt(cA_pywt, cD_pywt, wavelet, mode)
+    rec_jax = jaxwt.idwt(jnp.array(cA_pywt), jnp.array(cD_pywt), wavelet, mode)
+    np.testing.assert_allclose(np.array(rec_jax[:len(rec_pywt)]), rec_pywt, atol=ATOL)
 
 
 @pytest.mark.parametrize('wavelet', WAVELETS)
