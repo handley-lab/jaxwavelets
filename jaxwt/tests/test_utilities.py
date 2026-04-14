@@ -60,6 +60,33 @@ def test_upcoef(wavelet, part, level):
     np.testing.assert_allclose(np.array(result), expected, atol=ATOL)
 
 
+# --- JAX composability ---
+
+def test_qmf_jit():
+    f = jnp.array([1.0, 2.0, 3.0, 4.0])
+    np.testing.assert_allclose(jax.jit(jaxwt.qmf)(f), jaxwt.qmf(f))
+
+
+def test_downcoef_jit():
+    x = jnp.array(np.random.RandomState(0).randn(32))
+    f = jax.jit(lambda x: jaxwt.downcoef('a', x, 'db4', level=2))
+    np.testing.assert_allclose(np.array(f(x)), np.array(jaxwt.downcoef('a', x, 'db4', level=2)))
+
+
+def test_downcoef_grad():
+    x = jnp.array(np.random.RandomState(0).randn(32))
+    g = jax.grad(lambda x: jnp.sum(jaxwt.downcoef('a', x, 'db4', level=2)))(x)
+    assert g.shape == x.shape
+
+
+def test_upcoef_jit():
+    c = jnp.array(np.random.RandomState(0).randn(10))
+    f = jax.jit(lambda c: jaxwt.upcoef('a', c, 'db4', level=2))
+    np.testing.assert_allclose(np.array(f(c)), np.array(jaxwt.upcoef('a', c, 'db4', level=2)))
+
+
+# --- upcoef take ---
+
 @pytest.mark.parametrize('wavelet', WAVELETS)
 def test_upcoef_take(wavelet):
     x_np = np.random.RandomState(0).randn(16)

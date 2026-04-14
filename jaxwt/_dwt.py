@@ -1,5 +1,6 @@
 """Core 1D discrete wavelet transform."""
 import math
+import jax
 import jax.numpy as jnp
 from jaxwt._filters import get_wavelet
 
@@ -39,21 +40,23 @@ def downcoef(part, data, wavelet, mode='symmetric', level=1):
     w = get_wavelet(wavelet)
     for _ in range(level - 1):
         data, _ = dwt(data, w, mode)
-    cA, cD = dwt(data, w, mode)
-    return cA if part == 'a' else cD
+    return {'a': lambda: dwt(data, w, mode)[0], 'd': lambda: dwt(data, w, mode)[1]}[part]()
 
 
 def upcoef(part, coeffs, wavelet, level=1, take=0):
-    """Partial IDWT: reconstruct from single subband ('a' or 'd') for level levels.
+    """Partial IDWT: reconstruct from single subband for level levels.
 
     part='a': rec_lo at every level. part='d': rec_hi first, then rec_lo.
+    take is static (determines output shape).
     """
     w = get_wavelet(wavelet)
-    rec = _upcoef_step(coeffs, w.rec_lo if part == 'a' else w.rec_hi)
+    first_filter = {'a': w.rec_lo, 'd': w.rec_hi}[part]
+    rec = _upcoef_step(coeffs, first_filter)
     for _ in range(level - 1):
         rec = _upcoef_step(rec, w.rec_lo)
     if take > 0:
-        rec = rec[len(rec) // 2 - take // 2:len(rec) // 2 + take // 2 + take % 2]
+        start = rec.shape[0] // 2 - take // 2
+        rec = jax.lax.dynamic_slice(rec, (start,), (take,))
     return rec
 
 
