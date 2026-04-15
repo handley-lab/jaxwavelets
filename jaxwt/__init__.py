@@ -7,3 +7,4 @@ from jaxwt._swt import swt, iswt, swt_max_level
 from jaxwt._fswt import fswavedecn, fswaverecn, FswavedecnResult
 from jaxwt._mra import mra, imra, mra2, imra2, mran, imran
 from jaxwt._cwt import cwt, wavefun, integrate_wavelet, central_frequency, scale2frequency, ContinuousWavelet
+from jaxwt._packets import wp_decompose, wp_reconstruct, wp_decompose_nd, wp_reconstruct_nd
