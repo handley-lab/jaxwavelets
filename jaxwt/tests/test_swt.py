@@ -125,3 +125,12 @@ def test_swtn_subset_axes():
     for jd, pd in zip(cj, cp):
         for key in jd:
             np.testing.assert_allclose(np.array(jd[key]), pd[key], atol=ATOL)
+
+
+def test_iswtn_subset_axes_roundtrip():
+    """Inverse with subset axes."""
+    x = jnp.array(np.random.RandomState(0).randn(8, 8, 8))
+    axes = (0, 2)
+    coeffs = swtn(x, 'haar', level=1, axes=axes)
+    rec = iswtn(coeffs, 'haar', axes=axes)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
