@@ -36,7 +36,7 @@ def test_central_frequency_matches_pywt(wavelet):
     np.testing.assert_allclose(float(cf_jax), cf_pywt, rtol=1e-6)
 
 
-@pytest.mark.parametrize('wavelet', ['morl', 'mexh', 'gaus1', 'gaus4', 'gaus8'])
+@pytest.mark.parametrize('wavelet', REAL_WAVELETS)
 def test_cwt_real_matches_pywt(wavelet):
     x = np.random.RandomState(0).randn(128)
     scales = np.array([1., 2., 4., 8.])
@@ -46,7 +46,7 @@ def test_cwt_real_matches_pywt(wavelet):
     np.testing.assert_allclose(np.array(freq_jax), freq_pywt, rtol=1e-6)
 
 
-@pytest.mark.parametrize('wavelet', ['cmor1.5-1.0', 'cgau1', 'cgau4', 'shan1.5-1.0', 'fbsp2-1.5-1.0'])
+@pytest.mark.parametrize('wavelet', COMPLEX_WAVELETS)
 def test_cwt_complex_matches_pywt(wavelet):
     x = np.random.RandomState(0).randn(128)
     scales = np.array([1., 2., 4., 8.])

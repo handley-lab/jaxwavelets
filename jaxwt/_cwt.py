@@ -17,21 +17,20 @@ def as_wavelet(wavelet):
     return wavelet if isinstance(wavelet, ContinuousWavelet) else _wavelet_from_name(wavelet)
 
 
+_WAVELET_SPECS = {
+    'morl': (-8., 8., False),
+    'mexh': (-8., 8., False),
+    **{f'gaus{i}': (-5., 5., False) for i in range(1, 9)},
+    **{f'cgau{i}': (-5., 5., True) for i in range(1, 9)},
+}
+
+
 def _wavelet_from_name(name):
-    if name == 'morl':
-        return ContinuousWavelet(name, -8., 8., False)
-    if name == 'mexh':
-        return ContinuousWavelet(name, -8., 8., False)
-    if re.fullmatch(r'gaus[1-8]', name):
-        return ContinuousWavelet(name, -5., 5., False)
-    if re.fullmatch(r'cgau[1-8]', name):
-        return ContinuousWavelet(name, -5., 5., True)
-    if name.startswith('cmor'):
-        return ContinuousWavelet(name, -8., 8., True)
-    if name.startswith('shan'):
-        return ContinuousWavelet(name, -20., 20., True)
-    if name.startswith('fbsp'):
-        return ContinuousWavelet(name, -20., 20., True)
+    if name in _WAVELET_SPECS:
+        return ContinuousWavelet(name, *_WAVELET_SPECS[name])
+    for prefix, bounds in [('cmor', (-8., 8.)), ('shan', (-20., 20.)), ('fbsp', (-20., 20.))]:
+        if name.startswith(prefix):
+            return ContinuousWavelet(name, *bounds, True)
 
 
 def _parse_params(name, prefix):
