@@ -10,7 +10,18 @@ from jaxwt._filters import get_wavelet, Wavelet
 
 
 def swt_max_level(input_len):
-    """Maximum SWT decomposition level for a given signal length."""
+    """Maximum SWT decomposition level for a given signal length.
+
+    Parameters
+    ----------
+    input_len : int
+        Length of the input signal.
+
+    Returns
+    -------
+    int
+        Maximum decomposition level.
+    """
     return int(math.floor(math.log2(input_len)))
 
 
@@ -56,7 +67,31 @@ def _swt_axis(data, w, level, start_level, axis):
 # --- 1D API ---
 
 def swt(data, wavelet, level=None, start_level=0, trim_approx=False, norm=False):
-    """Multilevel 1D stationary wavelet transform."""
+    """Multilevel 1D stationary (undecimated) wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        1D input signal.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    level : int, optional
+        Number of decomposition levels. Default is the maximum level.
+    start_level : int
+        Starting decomposition level. Default 0.
+    trim_approx : bool
+        If True, return ``[cA_n, cD_n, ..., cD_1]`` instead of
+        ``[(cA_n, cD_n), ..., (cA_1, cD_1)]``. Default False.
+    norm : bool
+        If True, rescale filters by ``1/sqrt(2)`` for energy
+        preservation. Default False.
+
+    Returns
+    -------
+    list
+        Coefficients from coarsest to finest level. Format depends on
+        ``trim_approx``.
+    """
     w = get_wavelet(wavelet)
     if norm:
         w = Wavelet(*(f / jnp.sqrt(2) for f in w))
@@ -70,7 +105,23 @@ def swt(data, wavelet, level=None, start_level=0, trim_approx=False, norm=False)
 
 
 def iswt(coeffs, wavelet, norm=False):
-    """Multilevel 1D inverse stationary wavelet transform via cycle spinning."""
+    """Multilevel 1D inverse stationary wavelet transform.
+
+    Parameters
+    ----------
+    coeffs : list
+        SWT coefficients as returned by :func:`swt`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    norm : bool
+        If True, rescale filters by ``sqrt(2)`` to undo normalisation.
+        Default False.
+
+    Returns
+    -------
+    array
+        Reconstructed signal.
+    """
     w = get_wavelet(wavelet)
     if norm:
         w = Wavelet(*(f * jnp.sqrt(2) for f in w))
@@ -94,7 +145,31 @@ def iswt(coeffs, wavelet, norm=False):
 # --- nD API ---
 
 def swtn(data, wavelet, level, start_level=0, axes=None, trim_approx=False, norm=False):
-    """Multilevel nD stationary wavelet transform."""
+    """Multilevel n-dimensional stationary wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        Input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    level : int
+        Number of decomposition levels.
+    start_level : int
+        Starting decomposition level. Default 0.
+    axes : sequence of int, optional
+        Axes over which to compute the SWT. Default is all axes.
+    trim_approx : bool
+        If True, separate the final approximation from the detail
+        dictionaries. Default False.
+    norm : bool
+        If True, rescale filters for energy preservation. Default False.
+
+    Returns
+    -------
+    list
+        Subband coefficient dictionaries from coarsest to finest level.
+    """
     if axes is None:
         axes = tuple(range(data.ndim))
     else:
@@ -125,12 +200,53 @@ def swtn(data, wavelet, level, start_level=0, axes=None, trim_approx=False, norm
 
 
 def swt2(data, wavelet, level, start_level=0, axes=(-2, -1), trim_approx=False, norm=False):
-    """Multilevel 2D stationary wavelet transform."""
+    """Multilevel 2D stationary wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        2D input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    level : int
+        Number of decomposition levels.
+    start_level : int
+        Starting decomposition level. Default 0.
+    axes : tuple of int
+        Axes for the 2D transform. Default ``(-2, -1)``.
+    trim_approx : bool
+        If True, separate the final approximation. Default False.
+    norm : bool
+        If True, rescale filters for energy preservation. Default False.
+
+    Returns
+    -------
+    list
+        Subband coefficient dictionaries from coarsest to finest level.
+    """
     return swtn(data, wavelet, level, start_level, axes, trim_approx, norm)
 
 
 def iswtn(coeffs, wavelet, axes=None, norm=False):
-    """Multilevel nD inverse stationary wavelet transform via cycle spinning."""
+    """Multilevel n-dimensional inverse stationary wavelet transform.
+
+    Parameters
+    ----------
+    coeffs : list
+        SWT coefficients as returned by :func:`swtn`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    axes : sequence of int, optional
+        Axes over which the transform was computed. Default inferred
+        from coefficient keys.
+    norm : bool
+        If True, rescale filters to undo normalisation. Default False.
+
+    Returns
+    -------
+    array
+        Reconstructed array.
+    """
     w = get_wavelet(wavelet)
     if norm:
         w = Wavelet(*(f * jnp.sqrt(2) for f in w))
@@ -190,5 +306,22 @@ def iswtn(coeffs, wavelet, axes=None, norm=False):
 
 
 def iswt2(coeffs, wavelet, axes=(-2, -1), norm=False):
-    """Multilevel 2D inverse stationary wavelet transform."""
+    """Multilevel 2D inverse stationary wavelet transform.
+
+    Parameters
+    ----------
+    coeffs : list
+        SWT coefficients as returned by :func:`swt2`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    axes : tuple of int
+        Axes for the 2D transform. Default ``(-2, -1)``.
+    norm : bool
+        If True, rescale filters to undo normalisation. Default False.
+
+    Returns
+    -------
+    array
+        Reconstructed 2D array.
+    """
     return iswtn(coeffs, wavelet, axes, norm)

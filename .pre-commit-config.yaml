@@ -1,0 +1,52 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: detect-private-key
+      - id: debug-statements
+      - id: check-ast
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.1
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: prevent-master-commit
+        name: Prevent commits to master branch
+        entry: scripts/prevent-master-commit.sh
+        language: script
+        stages: [pre-commit]
+        always_run: true
+        pass_filenames: false
+      - id: version-check
+        name: Check for Version Bump
+        entry: python scripts/check_version.py
+        language: python
+        additional_dependencies: ['tomli>=2.0.0']
+        stages: [pre-commit]
+        pass_filenames: false
+      - id: prevent-master-push
+        name: Prevent pushes to master branch
+        entry: scripts/prevent-master-push.sh
+        language: script
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false

@@ -6,12 +6,42 @@ from jaxwt._filters import get_wavelet
 
 
 def dwt_max_level(data_len, filter_len):
-    """floor(log2(data_len / (filter_len - 1)))"""
+    """Maximum useful decomposition level for a given data and filter length.
+
+    Parameters
+    ----------
+    data_len : int
+        Length of the input signal.
+    filter_len : int
+        Length of the wavelet filter.
+
+    Returns
+    -------
+    int
+        Maximum decomposition level.
+    """
     return int(math.floor(math.log2(data_len / (filter_len - 1))))
 
 
 def dwt(x, wavelet, mode='symmetric'):
-    """1D discrete wavelet transform."""
+    """1D discrete wavelet transform.
+
+    Parameters
+    ----------
+    x : array
+        1D input signal.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+
+    Returns
+    -------
+    cA : array
+        Approximation coefficients.
+    cD : array
+        Detail coefficients.
+    """
     w = get_wavelet(wavelet)
     F = w.dec_lo.shape[0]
     if mode == 'periodization':
@@ -25,7 +55,24 @@ def dwt(x, wavelet, mode='symmetric'):
 
 
 def idwt(cA, cD, wavelet, mode='symmetric'):
-    """1D inverse discrete wavelet transform."""
+    """1D inverse discrete wavelet transform.
+
+    Parameters
+    ----------
+    cA : array
+        Approximation coefficients.
+    cD : array
+        Detail coefficients.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+
+    Returns
+    -------
+    array
+        Reconstructed signal.
+    """
     w = get_wavelet(wavelet)
     if mode == 'periodization':
         return _upc_per(cA, w.rec_lo) + _upc_per(cD, w.rec_hi)
@@ -33,9 +80,30 @@ def idwt(cA, cD, wavelet, mode='symmetric'):
 
 
 def downcoef(part, data, wavelet, mode='symmetric', level=1):
-    """Partial DWT: extract single subband at the given decomposition level.
+    """Partial DWT: extract a single subband at the given decomposition level.
 
-    'a': low-pass level times. 'd': low-pass level-1 times, then high-pass once.
+    Parameters
+    ----------
+    part : str
+        Subband to compute: 'a' for approximation, 'd' for detail.
+    data : array
+        1D input signal.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    level : int
+        Decomposition level. Default 1.
+
+    Returns
+    -------
+    array
+        Coefficients of the requested subband.
+
+    Notes
+    -----
+    'a' applies the low-pass filter ``level`` times. 'd' applies the
+    low-pass filter ``level - 1`` times, then the high-pass filter once.
     """
     w = get_wavelet(wavelet)
     for _ in range(level - 1):
@@ -44,10 +112,31 @@ def downcoef(part, data, wavelet, mode='symmetric', level=1):
 
 
 def upcoef(part, coeffs, wavelet, level=1, take=0):
-    """Partial IDWT: reconstruct from single subband for level levels.
+    """Partial inverse DWT: reconstruct from a single subband.
 
-    part='a': rec_lo at every level. part='d': rec_hi first, then rec_lo.
-    take is static (determines output shape).
+    Parameters
+    ----------
+    part : str
+        Subband type: 'a' for approximation, 'd' for detail.
+    coeffs : array
+        1D coefficient array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    level : int
+        Number of reconstruction levels. Default 1.
+    take : int
+        If positive, extract a centred window of this length from the
+        result. Must be static (determines output shape). Default 0.
+
+    Returns
+    -------
+    array
+        Reconstructed signal.
+
+    Notes
+    -----
+    'a' uses ``rec_lo`` at every level. 'd' uses ``rec_hi`` first,
+    then ``rec_lo`` for subsequent levels.
     """
     w = get_wavelet(wavelet)
     first_filter = {'a': w.rec_lo, 'd': w.rec_hi}[part]

@@ -6,7 +6,25 @@ from jaxwt._filters import get_wavelet
 
 
 class WaveletCoeffs:
-    """Multilevel wavelet coefficients. approx and details are traced; shapes and axes are static."""
+    """Multilevel wavelet decomposition coefficients.
+
+    Parameters
+    ----------
+    approx : array
+        Approximation coefficients at the coarsest level.
+    details : tuple of dict
+        Detail coefficient dicts, from coarsest to finest level.
+        Each dict maps subband keys (e.g. 'ad', 'da', 'dd') to arrays.
+    shapes : tuple of tuple
+        Original data shapes at each level, for reconstruction trimming.
+    axes : tuple of int
+        Axes along which the transform was computed.
+
+    Notes
+    -----
+    ``approx`` and ``details`` are JAX-traced; ``shapes`` and ``axes``
+    are static metadata. Registered as a JAX pytree node.
+    """
     __slots__ = ('approx', 'details', 'shapes', 'axes')
 
     def __init__(self, approx, details, shapes, axes):
@@ -41,7 +59,25 @@ def _idwt_axis(cA, cD, w, mode, axis):
 
 
 def dwtn(data, wavelet, mode='symmetric', axes=None):
-    """Single-level nD DWT."""
+    """Single-level n-dimensional discrete wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        Input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    axes : sequence of int, optional
+        Axes over which to compute the DWT. Default is all axes.
+
+    Returns
+    -------
+    dict
+        Dictionary mapping subband keys (e.g. 'aa', 'ad', 'da', 'dd'
+        for 2D) to coefficient arrays.
+    """
     axes = tuple(range(data.ndim)) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     coeffs = [('', data)]
@@ -52,7 +88,25 @@ def dwtn(data, wavelet, mode='symmetric', axes=None):
 
 
 def idwtn(coeffs, wavelet, mode='symmetric', axes=None):
-    """Single-level nD IDWT. Reverses dwtn by recombining 'a'/'d' pairs along each axis."""
+    """Single-level n-dimensional inverse discrete wavelet transform.
+
+    Parameters
+    ----------
+    coeffs : dict
+        Subband coefficient dictionary as returned by :func:`dwtn`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    axes : sequence of int, optional
+        Axes over which to compute the IDWT. Default inferred from key
+        length.
+
+    Returns
+    -------
+    array
+        Reconstructed array.
+    """
     axes = tuple(range(len(next(iter(coeffs))))) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     for axis_pos, axis in zip(reversed(range(len(axes))), reversed(axes)):
@@ -66,7 +120,27 @@ def idwtn(coeffs, wavelet, mode='symmetric', axes=None):
 
 
 def wavedecn(data, wavelet, mode='symmetric', level=None, axes=None):
-    """Multilevel nD DWT."""
+    """Multilevel n-dimensional discrete wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        Input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    level : int, optional
+        Decomposition level. Default is the maximum useful level.
+    axes : sequence of int, optional
+        Axes over which to compute the DWT. Default is all axes.
+
+    Returns
+    -------
+    WaveletCoeffs
+        Decomposition result containing approximation and detail
+        coefficients.
+    """
     axes = tuple(range(data.ndim)) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     if level is None:
@@ -84,7 +158,22 @@ def wavedecn(data, wavelet, mode='symmetric', level=None, axes=None):
 
 
 def waverecn(coeffs, wavelet, mode='symmetric'):
-    """Multilevel nD IDWT."""
+    """Multilevel n-dimensional inverse discrete wavelet transform.
+
+    Parameters
+    ----------
+    coeffs : WaveletCoeffs
+        Decomposition result from :func:`wavedecn`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+
+    Returns
+    -------
+    array
+        Reconstructed array.
+    """
     w = get_wavelet(wavelet)
     axes, a_key = coeffs.axes, 'a' * len(coeffs.axes)
     a = coeffs.approx
@@ -98,19 +187,76 @@ def waverecn(coeffs, wavelet, mode='symmetric'):
 # --- 2D convenience wrappers ---
 
 def dwt2(data, wavelet, mode='symmetric', axes=(-2, -1)):
-    """2D DWT. Returns (cA, (cH, cV, cD))."""
+    """Single-level 2D discrete wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        2D input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    axes : tuple of int
+        Axes for the 2D transform. Default ``(-2, -1)``.
+
+    Returns
+    -------
+    cA : array
+        Approximation coefficients.
+    details : tuple of array
+        ``(cH, cV, cD)`` -- horizontal, vertical, and diagonal detail
+        coefficients.
+    """
     c = dwtn(data, wavelet, mode, axes)
     return c['aa'], (c['da'], c['ad'], c['dd'])
 
 
 def idwt2(coeffs, wavelet, mode='symmetric', axes=(-2, -1)):
-    """2D IDWT from (cA, (cH, cV, cD)) format."""
+    """Single-level 2D inverse discrete wavelet transform.
+
+    Parameters
+    ----------
+    coeffs : tuple
+        ``(cA, (cH, cV, cD))`` as returned by :func:`dwt2`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    axes : tuple of int
+        Axes for the 2D transform. Default ``(-2, -1)``.
+
+    Returns
+    -------
+    array
+        Reconstructed 2D array.
+    """
     cA, (cH, cV, cD) = coeffs
     return idwtn({'aa': cA, 'da': cH, 'ad': cV, 'dd': cD}, wavelet, mode, axes)
 
 
 def wavedec2(data, wavelet, mode='symmetric', level=None, axes=(-2, -1)):
-    """Multilevel 2D DWT. Returns [cA, (cH,cV,cD)_n, ..., (cH,cV,cD)_1]."""
+    """Multilevel 2D discrete wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        2D input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    level : int, optional
+        Decomposition level. Default is the maximum useful level.
+    axes : tuple of int
+        Axes for the 2D transform. Default ``(-2, -1)``.
+
+    Returns
+    -------
+    list
+        ``[cA_n, (cH, cV, cD)_n, ..., (cH, cV, cD)_1]`` from coarsest
+        to finest level.
+    """
     axes = tuple(axes)
     w = get_wavelet(wavelet)
     if level is None:
@@ -126,7 +272,25 @@ def wavedec2(data, wavelet, mode='symmetric', level=None, axes=(-2, -1)):
 
 
 def waverec2(coeffs, wavelet, mode='symmetric', axes=(-2, -1)):
-    """Multilevel 2D IDWT from [cA, (cH,cV,cD)_n, ..., (cH,cV,cD)_1]."""
+    """Multilevel 2D inverse discrete wavelet transform.
+
+    Parameters
+    ----------
+    coeffs : list
+        ``[cA_n, (cH, cV, cD)_n, ..., (cH, cV, cD)_1]`` as returned
+        by :func:`wavedec2`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    axes : tuple of int
+        Axes for the 2D transform. Default ``(-2, -1)``.
+
+    Returns
+    -------
+    array
+        Reconstructed 2D array.
+    """
     w = get_wavelet(wavelet)
     a = coeffs[0]
     for cH, cV, cD in coeffs[1:]:

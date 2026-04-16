@@ -4,6 +4,20 @@ import jax.numpy as jnp
 
 
 class Wavelet(NamedTuple):
+    """Discrete wavelet filter bank.
+
+    Parameters
+    ----------
+    dec_lo : array
+        Decomposition low-pass filter.
+    dec_hi : array
+        Decomposition high-pass filter.
+    rec_lo : array
+        Reconstruction low-pass filter.
+    rec_hi : array
+        Reconstruction high-pass filter.
+    """
+
     dec_lo: jnp.ndarray
     dec_hi: jnp.ndarray
     rec_lo: jnp.ndarray
@@ -11,20 +25,59 @@ class Wavelet(NamedTuple):
 
 
 def get_wavelet(wavelet):
-    """Return a Wavelet, looking up by name if needed."""
+    """Return a Wavelet, looking up by name if needed.
+
+    Parameters
+    ----------
+    wavelet : str or Wavelet
+        Wavelet name (e.g. 'db4', 'haar') or an existing Wavelet instance.
+
+    Returns
+    -------
+    Wavelet
+        Filter bank for the requested wavelet.
+    """
     if isinstance(wavelet, Wavelet):
         return wavelet
     return Wavelet(*(jnp.array(f) for f in FILTER_BANKS[wavelet]))
 
 
 def qmf(filt):
-    """Quadrature mirror filter: reverse, then negate odd indices."""
+    """Quadrature mirror filter.
+
+    Parameters
+    ----------
+    filt : array_like
+        Input filter coefficients.
+
+    Returns
+    -------
+    array
+        Reversed filter with odd-indexed elements negated.
+    """
     f = jnp.array(filt)[::-1]
     return f.at[1::2].multiply(-1)
 
 
 def orthogonal_filter_bank(scaling_filter):
-    """Derive (dec_lo, dec_hi, rec_lo, rec_hi) from a scaling filter."""
+    """Derive a complete orthogonal filter bank from a scaling filter.
+
+    Parameters
+    ----------
+    scaling_filter : array_like
+        Scaling (low-pass) filter coefficients.
+
+    Returns
+    -------
+    dec_lo : array
+        Decomposition low-pass filter.
+    dec_hi : array
+        Decomposition high-pass filter.
+    rec_lo : array
+        Reconstruction low-pass filter.
+    rec_hi : array
+        Reconstruction high-pass filter.
+    """
     rec_lo = jnp.sqrt(2) * jnp.array(scaling_filter) / jnp.sum(jnp.array(scaling_filter))
     dec_lo = rec_lo[::-1]
     rec_hi = qmf(rec_lo)

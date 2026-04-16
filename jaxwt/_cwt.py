@@ -15,6 +15,20 @@ import jax.numpy as jnp
 
 
 class ContinuousWavelet(NamedTuple):
+    """Continuous wavelet specification.
+
+    Parameters
+    ----------
+    name : str
+        Wavelet family name (e.g. 'morl', 'cmor1.5-1.0').
+    lower_bound : float
+        Lower bound of the wavelet's effective support.
+    upper_bound : float
+        Upper bound of the wavelet's effective support.
+    complex_cwt : bool
+        Whether the wavelet is complex-valued.
+    """
+
     name: str
     lower_bound: float
     upper_bound: float
@@ -132,6 +146,22 @@ def _psi(w, x):
 # --- Public utility functions ---
 
 def wavefun(wavelet, precision=8):
+    """Evaluate the wavelet function on a grid.
+
+    Parameters
+    ----------
+    wavelet : str or ContinuousWavelet
+        Wavelet to evaluate.
+    precision : int
+        Grid resolution as ``2**precision`` points. Default 8.
+
+    Returns
+    -------
+    psi : array
+        Wavelet function values (complex if the wavelet is complex).
+    x : array
+        Grid points.
+    """
     w = as_wavelet(wavelet)
     x = jnp.linspace(w.lower_bound, w.upper_bound, 2**precision)
     psi = _psi(w, x)
@@ -141,6 +171,22 @@ def wavefun(wavelet, precision=8):
 
 
 def integrate_wavelet(wavelet, precision=8):
+    """Compute the running integral of the wavelet function.
+
+    Parameters
+    ----------
+    wavelet : str or ContinuousWavelet
+        Wavelet to integrate.
+    precision : int
+        Grid resolution as ``2**precision`` points. Default 8.
+
+    Returns
+    -------
+    int_psi : array
+        Cumulative integral of the wavelet function.
+    x : array
+        Grid points.
+    """
     w = as_wavelet(wavelet)
     x = jnp.linspace(w.lower_bound, w.upper_bound, 2**precision)
     step = x[1] - x[0]
@@ -151,6 +197,20 @@ def integrate_wavelet(wavelet, precision=8):
 
 
 def central_frequency(wavelet, precision=8):
+    """Central frequency of a wavelet.
+
+    Parameters
+    ----------
+    wavelet : str or ContinuousWavelet
+        Wavelet to analyse.
+    precision : int
+        Grid resolution as ``2**precision`` points. Default 8.
+
+    Returns
+    -------
+    float
+        Central frequency in cycles per unit.
+    """
     psi, x = wavefun(wavelet, precision)
     domain = x[-1] - x[0]
     index = jnp.argmax(jnp.abs(jnp.fft.fft(psi))[1:]) + 2
@@ -159,13 +219,52 @@ def central_frequency(wavelet, precision=8):
 
 
 def scale2frequency(wavelet, scale, precision=8):
+    """Convert wavelet scale to frequency.
+
+    Parameters
+    ----------
+    wavelet : str or ContinuousWavelet
+        Wavelet to use.
+    scale : float or array
+        Scale(s) to convert.
+    precision : int
+        Grid resolution as ``2**precision`` points. Default 8.
+
+    Returns
+    -------
+    float or array
+        Frequency corresponding to each scale.
+    """
     return central_frequency(wavelet, precision) / scale
 
 
 # --- Two-phase CWT: prepare + apply ---
 
 class CWTKernelBank:
-    """Precomputed CWT kernels. kernels/freqs are traced; lengths/scales/method are static."""
+    """Precomputed CWT convolution kernels.
+
+    Parameters
+    ----------
+    kernels_r : array
+        Real parts of the padded kernel matrix, shape ``(n_scales, Lmax)``.
+    kernels_i : array
+        Imaginary parts (empty if the wavelet is real).
+    kernel_lengths : tuple of int
+        Unpadded kernel length per scale (static).
+    scales_sqrt : tuple of float
+        Square root of each scale (static).
+    complex_cwt : bool
+        Whether the wavelet is complex (static).
+    method : str
+        Convolution method, 'conv' or 'fft' (static).
+    freqs : array
+        Pseudo-frequencies corresponding to each scale.
+
+    Notes
+    -----
+    ``kernels_r``, ``kernels_i``, and ``freqs`` are JAX-traced;
+    remaining fields are static. Registered as a JAX pytree node.
+    """
     __slots__ = ('kernels_r', 'kernels_i', 'kernel_lengths', 'scales_sqrt', 'complex_cwt', 'method', 'freqs')
 
     def __init__(self, kernels_r, kernels_i, kernel_lengths, scales_sqrt, complex_cwt, method, freqs):
@@ -186,7 +285,27 @@ jax.tree_util.register_pytree_node(
 
 
 def prepare_cwt(scales, wavelet, sampling_period=1., method='conv', precision=12):
-    """Build CWT kernel bank. Pure JAX, all shapes static from scale/wavelet/precision."""
+    """Build a CWT kernel bank for use with :func:`apply_cwt`.
+
+    Parameters
+    ----------
+    scales : sequence of float
+        Wavelet scales.
+    wavelet : str or ContinuousWavelet
+        Wavelet to use.
+    sampling_period : float
+        Sampling period of the input signal. Default 1.
+    method : str
+        Convolution method: 'conv' (direct) or 'fft'. Default 'conv'.
+    precision : int
+        Wavelet integration resolution as ``2**precision`` points.
+        Default 12.
+
+    Returns
+    -------
+    CWTKernelBank
+        Precomputed kernel bank.
+    """
     w = as_wavelet(wavelet)
     # Derive step/width analytically from wavelet bounds (Python floats, no tracing)
     n_samples = 2**precision
@@ -234,7 +353,23 @@ def prepare_cwt(scales, wavelet, sampling_period=1., method='conv', precision=12
 
 
 def apply_cwt(data, bank):
-    """Apply precomputed CWT kernel bank to data. Fully JIT-compatible."""
+    """Apply a precomputed CWT kernel bank to data.
+
+    Parameters
+    ----------
+    data : array
+        1D input signal.
+    bank : CWTKernelBank
+        Kernel bank from :func:`prepare_cwt`.
+
+    Returns
+    -------
+    coefs : array
+        CWT coefficient matrix, shape ``(n_scales, n_samples)``.
+        Complex if the wavelet is complex.
+    freqs : array
+        Pseudo-frequencies for each scale.
+    """
     N = data.shape[0]
     Lmax = bank.kernels_r.shape[1]
     n_scales = bank.kernels_r.shape[0]
@@ -274,6 +409,30 @@ def apply_cwt(data, bank):
 
 
 def cwt(data, scales, wavelet, sampling_period=1., method='conv', precision=12):
-    """1D continuous wavelet transform. Convenience wrapper around prepare_cwt + apply_cwt."""
+    """1D continuous wavelet transform.
+
+    Parameters
+    ----------
+    data : array
+        1D input signal.
+    scales : sequence of float
+        Wavelet scales.
+    wavelet : str or ContinuousWavelet
+        Wavelet to use.
+    sampling_period : float
+        Sampling period. Default 1.
+    method : str
+        Convolution method: 'conv' or 'fft'. Default 'conv'.
+    precision : int
+        Wavelet integration resolution as ``2**precision`` points.
+        Default 12.
+
+    Returns
+    -------
+    coefs : array
+        CWT coefficient matrix, shape ``(n_scales, n_samples)``.
+    freqs : array
+        Pseudo-frequencies for each scale.
+    """
     bank = prepare_cwt(scales, wavelet, sampling_period, method, precision)
     return apply_cwt(data, bank)

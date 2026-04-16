@@ -26,30 +26,120 @@ def _mra_nd(data, wavelet, mode, level, axes):
 
 
 def mra(data, wavelet, mode='symmetric', level=None, axis=-1):
-    """1D multiresolution analysis. Returns list of arrays summing to data."""
+    """1D multiresolution analysis.
+
+    Parameters
+    ----------
+    data : array
+        Input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    level : int, optional
+        Decomposition level. Default is the maximum useful level.
+    axis : int
+        Axis along which to compute the MRA. Default -1.
+
+    Returns
+    -------
+    list of array
+        Components whose sum reconstructs the input data.
+    """
     return _mra_nd(data, wavelet, mode, level, axes=(axis,))
 
 
 def imra(mra_coeffs):
-    """Inverse 1D MRA: sum of components."""
+    """Inverse 1D multiresolution analysis.
+
+    Parameters
+    ----------
+    mra_coeffs : list of array
+        MRA components from :func:`mra`.
+
+    Returns
+    -------
+    array
+        Sum of all components.
+    """
     return sum(mra_coeffs)
 
 
 def mra2(data, wavelet, mode='symmetric', level=None, axes=(-2, -1)):
-    """2D multiresolution analysis."""
+    """2D multiresolution analysis.
+
+    Parameters
+    ----------
+    data : array
+        2D input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    level : int, optional
+        Decomposition level. Default is the maximum useful level.
+    axes : tuple of int
+        Axes for the 2D transform. Default ``(-2, -1)``.
+
+    Returns
+    -------
+    list of array
+        Components whose sum reconstructs the input data.
+    """
     return _mra_nd(data, wavelet, mode, level, axes)
 
 
 def imra2(mra_coeffs):
-    """Inverse 2D MRA: sum of components."""
+    """Inverse 2D multiresolution analysis.
+
+    Parameters
+    ----------
+    mra_coeffs : list of array
+        MRA components from :func:`mra2`.
+
+    Returns
+    -------
+    array
+        Sum of all components.
+    """
     return sum(mra_coeffs)
 
 
 def mran(data, wavelet, mode='symmetric', level=None, axes=None):
-    """nD multiresolution analysis."""
+    """N-dimensional multiresolution analysis.
+
+    Parameters
+    ----------
+    data : array
+        Input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    level : int, optional
+        Decomposition level. Default is the maximum useful level.
+    axes : sequence of int, optional
+        Axes over which to compute the MRA. Default is all axes.
+
+    Returns
+    -------
+    list of array
+        Components whose sum reconstructs the input data.
+    """
     return _mra_nd(data, wavelet, mode, level, axes)
 
 
 def imran(mra_coeffs):
-    """Inverse nD MRA: sum of components."""
+    """Inverse n-dimensional multiresolution analysis.
+
+    Parameters
+    ----------
+    mra_coeffs : list of array
+        MRA components from :func:`mran`.
+
+    Returns
+    -------
+    array
+        Sum of all components.
+    """
     return sum(mra_coeffs)

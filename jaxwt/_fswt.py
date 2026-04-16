@@ -29,7 +29,26 @@ def _waverec_axis(coeffs, w, mode, axis):
 
 
 class FswavedecnResult:
-    """Result of fully separable wavelet decomposition."""
+    """Result of a fully separable wavelet decomposition.
+
+    Parameters
+    ----------
+    coeffs : array
+        Concatenated coefficient array along each transform axis.
+    coeff_slices : tuple of tuple of slice
+        Slices to extract each subband along each axis.
+    axes : tuple of int
+        Axes along which the transform was computed.
+    wavelet : Wavelet
+        Wavelet used for the decomposition.
+    mode : str
+        Signal extension mode used.
+
+    Notes
+    -----
+    ``coeffs`` is JAX-traced; remaining fields are static metadata.
+    Registered as a JAX pytree node.
+    """
     __slots__ = ('coeffs', 'coeff_slices', 'axes', 'wavelet', 'mode')
 
     def __init__(self, coeffs, coeff_slices, axes, wavelet, mode):
@@ -55,7 +74,28 @@ jax.tree_util.register_pytree_node(
 
 
 def fswavedecn(data, wavelet, mode='symmetric', levels=None, axes=None):
-    """Fully separable wavelet decomposition."""
+    """Fully separable n-dimensional wavelet decomposition.
+
+    Parameters
+    ----------
+    data : array
+        Input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    levels : int or list of int, optional
+        Decomposition level(s) per axis. Default is the maximum useful
+        level for each axis.
+    axes : sequence of int, optional
+        Axes over which to decompose. Default is all axes.
+
+    Returns
+    -------
+    FswavedecnResult
+        Decomposition result containing concatenated coefficients and
+        metadata for reconstruction.
+    """
     axes = tuple(range(data.ndim)) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     if levels is None:
@@ -78,7 +118,18 @@ def fswavedecn(data, wavelet, mode='symmetric', levels=None, axes=None):
 
 
 def fswaverecn(result):
-    """Fully separable inverse wavelet reconstruction."""
+    """Fully separable inverse wavelet reconstruction.
+
+    Parameters
+    ----------
+    result : FswavedecnResult
+        Decomposition result from :func:`fswavedecn`.
+
+    Returns
+    -------
+    array
+        Reconstructed array.
+    """
     arr = result.coeffs
     for ax_idx, ax in enumerate(result.axes):
         slices_base = [slice(None)] * arr.ndim

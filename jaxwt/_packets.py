@@ -6,10 +6,27 @@ from jaxwt._filters import get_wavelet
 
 
 def wp_decompose(data, wavelet, mode='symmetric', maxlevel=None):
-    """1D wavelet packet decomposition. Returns (leaves, shapes).
+    """1D wavelet packet decomposition.
 
-    leaves: dict mapping path strings to arrays (all paths have length maxlevel)
-    shapes: dict mapping parent paths to their data shapes (for reconstruction trimming)
+    Parameters
+    ----------
+    data : array
+        1D input signal.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    maxlevel : int, optional
+        Maximum decomposition level. Default is the maximum useful
+        level.
+
+    Returns
+    -------
+    leaves : dict
+        Leaf nodes mapping path strings (e.g. 'aad') to coefficient
+        arrays. All paths have length ``maxlevel``.
+    shapes : dict
+        Parent node shapes for reconstruction trimming.
     """
     w = get_wavelet(wavelet)
     if maxlevel is None:
@@ -28,9 +45,22 @@ def wp_decompose(data, wavelet, mode='symmetric', maxlevel=None):
 
 
 def wp_reconstruct(leaves, wavelet, mode='symmetric'):
-    """1D wavelet packet reconstruction from complete leaf set.
+    """1D wavelet packet reconstruction from a complete leaf set.
 
-    Expects all 2^maxlevel leaves at the same depth.
+    Parameters
+    ----------
+    leaves : dict
+        Leaf coefficient dictionary as returned by :func:`wp_decompose`.
+        All ``2**maxlevel`` leaves must be present at the same depth.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+
+    Returns
+    -------
+    array
+        Reconstructed signal.
     """
     w = get_wavelet(wavelet)
     nodes = dict(leaves)
@@ -49,7 +79,29 @@ def wp_reconstruct(leaves, wavelet, mode='symmetric'):
 
 
 def wp_decompose_nd(data, wavelet, mode='symmetric', maxlevel=None, axes=None):
-    """nD wavelet packet decomposition. Returns (leaves, shapes)."""
+    """N-dimensional wavelet packet decomposition.
+
+    Parameters
+    ----------
+    data : array
+        Input array.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    maxlevel : int, optional
+        Maximum decomposition level. Default is the maximum useful
+        level.
+    axes : sequence of int, optional
+        Axes over which to decompose. Default is all axes.
+
+    Returns
+    -------
+    leaves : dict
+        Leaf nodes mapping path strings to coefficient arrays.
+    shapes : dict
+        Parent node shapes for reconstruction trimming.
+    """
     if axes is None:
         axes = tuple(range(data.ndim))
     else:
@@ -72,7 +124,28 @@ def wp_decompose_nd(data, wavelet, mode='symmetric', maxlevel=None, axes=None):
 
 
 def wp_reconstruct_nd(leaves, wavelet, mode='symmetric', axes=None, ndim_transform=None):
-    """nD wavelet packet reconstruction from complete leaf set."""
+    """N-dimensional wavelet packet reconstruction from a complete leaf set.
+
+    Parameters
+    ----------
+    leaves : dict
+        Leaf coefficient dictionary as returned by
+        :func:`wp_decompose_nd`.
+    wavelet : str or Wavelet
+        Wavelet to use.
+    mode : str
+        Signal extension mode. Default 'symmetric'.
+    axes : sequence of int, optional
+        Axes over which the decomposition was computed.
+    ndim_transform : int, optional
+        Number of transform dimensions. Inferred from ``axes`` if
+        provided.
+
+    Returns
+    -------
+    array
+        Reconstructed array.
+    """
     axes = tuple(axes) if axes is not None else None
     w = get_wavelet(wavelet)
     nodes = dict(leaves)
