@@ -81,9 +81,34 @@ pytest jaxwt/tests/
 
 1182 tests verify numerical agreement with pywt to machine precision (`atol=1e-14` for direct comparisons, `atol=1e-11` for roundtrips).
 
+## Composability
+
+Every function is a single-example transform. Batching, differentiation, compilation, and distribution are the caller's responsibility via JAX's composable transformations:
+
+```python
+# Batch over 1000 examples
+jax.vmap(partial(jaxwt.wavedecn, wavelet='db4'))(batch_of_fields)
+
+# Per-example gradients
+jax.vmap(jax.grad(loss_fn))(batch)
+
+# Distribute across devices
+jax.pmap(partial(jaxwt.wavedecn, wavelet='db4'))(sharded_data)
+
+# Compile once, run many times
+fast_transform = jax.jit(jaxwt.wavedecn, static_argnames=['wavelet', 'mode', 'level'])
+
+# Nest arbitrarily: jit(vmap(grad(...)))
+jax.jit(jax.vmap(jax.grad(
+    lambda x: jnp.sum(jaxwt.waverecn(jaxwt.wavedecn(x, 'db4'), 'db4'))
+)))(batch)
+```
+
+Coefficients are JAX pytrees (`WaveletCoeffs`, `CWTKernelBank`), so `jax.tree_util.tree_map` works directly on them.
+
 ## Design
 
 - **Pure JAX** — no numpy, no C extensions, no complex arithmetic internally
 - **Single-example functions** — compose with `jax.vmap`/`jax.pmap`/`jax.grad`/`jax.jit` from outside
-- **NamedTuple pytrees** — coefficients are JAX-compatible pytrees
+- **Pytree coefficients** — all outputs are JAX-compatible pytrees, batchable via `vmap`
 - **No defensive programming** — clean, lightweight scientific code
