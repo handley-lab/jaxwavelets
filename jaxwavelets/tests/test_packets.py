@@ -80,3 +80,15 @@ def test_wp_nd_leaf_count():
     x = jnp.array(np.random.RandomState(0).randn(16, 16))
     leaves, _ = wp_decompose_nd(x, "haar", maxlevel=2)
     assert len(leaves) == 4**2  # (2^ndim)^maxlevel
+
+
+def test_wp_decompose_default_maxlevel():
+    x = jnp.array(np.random.RandomState(0).randn(32))
+    leaves, _ = wp_decompose(x, "haar")
+    assert len(leaves) > 0
+
+
+def test_wp_decompose_nd_default_maxlevel():
+    x = jnp.array(np.random.RandomState(0).randn(16, 16))
+    leaves, _ = wp_decompose_nd(x, "haar")
+    assert len(leaves) > 0

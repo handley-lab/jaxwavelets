@@ -75,6 +75,15 @@ def test_cwt_fft_method():
     np.testing.assert_allclose(np.array(coef_fft), np.array(coef_conv), atol=1e-10)
 
 
+def test_cwt_fft_complex():
+    """Cover FFT path for complex wavelets."""
+    x = np.random.RandomState(0).randn(128)
+    scales = np.array([1.0, 2.0, 4.0])
+    coef_conv, _ = cwt(jnp.array(x), scales, "cmor1.5-1.0", method="conv")
+    coef_fft, _ = cwt(jnp.array(x), scales, "cmor1.5-1.0", method="fft")
+    np.testing.assert_allclose(np.array(coef_fft), np.array(coef_conv), atol=1e-10)
+
+
 def test_cwt_grad():
     x = jnp.array(np.random.RandomState(0).randn(64))
     scales = jnp.array([1.0, 2.0, 4.0])

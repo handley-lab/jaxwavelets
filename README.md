@@ -4,6 +4,7 @@
 [![CI](https://github.com/handley-lab/jaxwavelets/actions/workflows/ci.yml/badge.svg)](https://github.com/handley-lab/jaxwavelets/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/pypi/pyversions/jaxwavelets)](https://pypi.org/project/jaxwavelets/)
+[![codecov](https://codecov.io/gh/handley-lab/jaxwavelets/graph/badge.svg)](https://codecov.io/gh/handley-lab/jaxwavelets)
 
 Extending [PyWavelets](https://pywavelets.readthedocs.io/) to [JAX](https://jax.readthedocs.io/). Differentiable, JIT-compilable, GPU-ready wavelet transforms.
 

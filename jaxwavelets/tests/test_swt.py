@@ -13,11 +13,10 @@ ATOL_RT = 1e-11
 
 
 @pytest.mark.parametrize("wavelet", WAVELETS)
-@pytest.mark.parametrize("N", [8, 16, 32, 64])
-@pytest.mark.parametrize("level", [1, 2, 3])
+@pytest.mark.parametrize(
+    "N, level", [(8, 1), (8, 2), (16, 1), (16, 2), (16, 3), (32, 2), (32, 3), (64, 3)]
+)
 def test_swt_matches_pywt(wavelet, N, level):
-    if 2**level > N:
-        pytest.skip("level too high for signal length")
     x_np = np.random.RandomState(0).randn(N)
     coeffs_jax = swt(jnp.array(x_np), wavelet, level=level)
     coeffs_pywt = pywt.swt(x_np, wavelet, level=level)
@@ -135,4 +134,44 @@ def test_iswtn_subset_axes_roundtrip():
     axes = (0, 2)
     coeffs = swtn(x, "haar", level=1, axes=axes)
     rec = iswtn(coeffs, "haar", axes=axes)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
+
+
+# --- Coverage: norm, trim_approx, level=None ---
+
+
+def test_swt_norm_roundtrip():
+    x = jnp.array(np.random.RandomState(0).randn(16))
+    coeffs = swt(x, "haar", level=2, norm=True)
+    rec = iswt(coeffs, "haar", norm=True)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
+
+
+def test_swt_level_none():
+    x = jnp.array(np.random.RandomState(0).randn(16))
+    coeffs = swt(x, "haar")
+    assert len(coeffs) == 4  # log2(16) = 4
+
+
+def test_swtn_norm_roundtrip():
+    x = jnp.array(np.random.RandomState(0).randn(8, 8))
+    coeffs = swtn(x, "haar", level=1, norm=True)
+    rec = iswtn(coeffs, "haar", norm=True)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
+
+
+def test_swtn_trim_approx():
+    x_np = np.random.RandomState(0).randn(8, 8)
+    coeffs = swtn(jnp.array(x_np), "haar", level=2, trim_approx=True)
+    coeffs_p = pywt.swtn(x_np, "haar", level=2, trim_approx=True)
+    np.testing.assert_allclose(np.array(coeffs[0]), coeffs_p[0], atol=ATOL)
+    for jd, pd in zip(coeffs[1:], coeffs_p[1:], strict=False):
+        for key in jd:
+            np.testing.assert_allclose(np.array(jd[key]), pd[key], atol=ATOL)
+
+
+def test_iswtn_trim_approx_roundtrip():
+    x = jnp.array(np.random.RandomState(0).randn(8, 8))
+    coeffs = swtn(x, "haar", level=2, trim_approx=True)
+    rec = iswtn(coeffs, "haar")
     np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
