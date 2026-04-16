@@ -48,9 +48,11 @@ jobs:
         run: ruff format --check jaxwavelets/
 
       - name: Test with coverage
+        env:
+          JAX_ENABLE_X64: "1"
         run: |
           pip install pytest-cov
-          JAX_ENABLE_X64=1 pytest jaxwavelets/tests/ --cov=jaxwavelets --cov-report=xml --cov-report=term-missing -v --tb=short
+          pytest jaxwavelets/tests/ --cov=jaxwavelets --cov-report=xml --cov-report=term-missing -v --tb=short
 
       - name: Upload coverage
         if: matrix.python-version == '3.12'
