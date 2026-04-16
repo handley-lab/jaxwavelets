@@ -1,6 +1,6 @@
 # Maintainer: Will Handley <wh260@cam.ac.uk>
 pkgname=python-jaxwavelets
-pkgver=0.1.2
+pkgver=0.1.3
 pkgrel=1
 pkgdesc="JAX-native wavelet transforms"
 arch=('any')
