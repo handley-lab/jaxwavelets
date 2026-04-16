@@ -479,7 +479,8 @@ def prepare_cwt(scales, wavelet, sampling_period=1.0, method="conv", precision=1
     kernels_r, kernels_i, lengths = [], [], []
     for scale in scales:
         scale = float(scale)
-        j = jnp.floor(jnp.arange(scale * width + 1) / (scale * step)).astype(jnp.int32)
+        j_len = int(scale * width + 1)
+        j = jnp.floor(jnp.arange(j_len) / (scale * step)).astype(jnp.int32)
         j = j[j < n_samples]
         L = int(j.shape[0])
         lengths.append(L)
