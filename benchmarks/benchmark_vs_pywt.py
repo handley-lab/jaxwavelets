@@ -10,12 +10,14 @@ import os
 
 os.environ["JAX_ENABLE_X64"] = "1"
 import time
-import numpy as np
+
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pywt
+
 import jaxwt
-from jaxwt._cwt import prepare_cwt, apply_cwt
+from jaxwt._cwt import apply_cwt, prepare_cwt
 from jaxwt._swt import swt
 
 jax.config.update("jax_platform_name", "cpu")

@@ -1,7 +1,8 @@
 """Multiresolution analysis."""
 
 import jax.numpy as jnp
-from jaxwt._multidim import wavedecn, waverecn, WaveletCoeffs, wavedec2, waverec2
+
+from jaxwt._multidim import WaveletCoeffs, wavedecn, waverecn
 
 
 def _mra_nd(data, wavelet, mode, level, axes):

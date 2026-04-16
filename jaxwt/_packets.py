@@ -1,9 +1,8 @@
 """Wavelet packet decomposition and reconstruction."""
 
-import jax.numpy as jnp
-from jaxwt._dwt import dwt, idwt, dwt_max_level
-from jaxwt._multidim import dwtn, idwtn
+from jaxwt._dwt import dwt, dwt_max_level, idwt
 from jaxwt._filters import get_wavelet
+from jaxwt._multidim import dwtn, idwtn
 
 
 def wp_decompose(data, wavelet, mode="symmetric", maxlevel=None):
@@ -103,12 +102,8 @@ def wp_decompose_nd(data, wavelet, mode="symmetric", maxlevel=None, axes=None):
     shapes : dict
         Parent node shapes for reconstruction trimming.
     """
-    if axes is None:
-        axes = tuple(range(data.ndim))
-    else:
-        axes = tuple(axes)
+    axes = tuple(range(data.ndim)) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
-    ndim = len(axes)
     if maxlevel is None:
         maxlevel = dwt_max_level(min(data.shape[ax] for ax in axes), w.dec_lo.shape[0])
     leaves = {"": data}

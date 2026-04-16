@@ -2,6 +2,7 @@
 
 import jax
 import jax.numpy as jnp
+
 from jaxwt._dwt import dwt_max_level
 from jaxwt._filters import get_wavelet
 from jaxwt._multidim import _dwt_axis, _idwt_axis
@@ -107,7 +108,7 @@ def fswavedecn(data, wavelet, mode="symmetric", levels=None, axes=None):
 
     coeff_slices = []
     arr = data
-    for ax, lev in zip(axes, levels):
+    for ax, lev in zip(axes, levels, strict=False):
         coeffs = _wavedec_axis(arr, w, mode, lev, ax)
         shapes = [c.shape[ax] for c in coeffs]
         offsets = [0]

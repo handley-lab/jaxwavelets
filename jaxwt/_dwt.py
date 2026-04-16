@@ -1,8 +1,10 @@
 """Core 1D discrete wavelet transform."""
 
 import math
+
 import jax
 import jax.numpy as jnp
+
 from jaxwt._filters import get_wavelet
 
 

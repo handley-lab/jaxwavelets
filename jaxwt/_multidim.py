@@ -2,7 +2,8 @@
 
 import jax
 import jax.numpy as jnp
-from jaxwt._dwt import dwt, idwt, dwt_max_level
+
+from jaxwt._dwt import dwt, dwt_max_level, idwt
 from jaxwt._filters import get_wavelet
 
 
@@ -90,7 +91,7 @@ def dwtn(data, wavelet, mode="symmetric", axes=None):
         coeffs = [
             (k + s, c)
             for k, x in coeffs
-            for s, c in zip("ad", _dwt_axis(x, w, mode, axis))
+            for s, c in zip("ad", _dwt_axis(x, w, mode, axis), strict=False)
         ]
     return dict(sorted(coeffs))
 
@@ -117,7 +118,7 @@ def idwtn(coeffs, wavelet, mode="symmetric", axes=None):
     """
     axes = tuple(range(len(next(iter(coeffs))))) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
-    for axis_pos, axis in zip(reversed(range(len(axes))), reversed(axes)):
+    for axis_pos, axis in zip(reversed(range(len(axes))), reversed(axes), strict=False):
         grouped = {}
         for key, arr in coeffs.items():
             rest = key[:axis_pos] + key[axis_pos + 1 :]
@@ -187,7 +188,7 @@ def waverecn(coeffs, wavelet, mode="symmetric"):
     w = get_wavelet(wavelet)
     axes, a_key = coeffs.axes, "a" * len(coeffs.axes)
     a = coeffs.approx
-    for d, shape in zip(coeffs.details, coeffs.shapes):
+    for d, shape in zip(coeffs.details, coeffs.shapes, strict=False):
         d_shape = next(iter(d.values())).shape
         a = idwtn({a_key: a[tuple(slice(s) for s in d_shape)], **d}, w, mode, axes)
         a = a[tuple(slice(s) for s in shape)]

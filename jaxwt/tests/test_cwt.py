@@ -1,14 +1,19 @@
 """Tests for continuous wavelet transform."""
 
-import numpy as np
 import jax
-
-jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import pywt
+import numpy as np
 import pytest
+import pywt
 
-from jaxwt._cwt import cwt, wavefun, integrate_wavelet, central_frequency
+from jaxwt._cwt import (
+    apply_cwt,
+    central_frequency,
+    cwt,
+    integrate_wavelet,
+    prepare_cwt,
+    wavefun,
+)
 
 REAL_WAVELETS = ["morl", "mexh"] + [f"gaus{i}" for i in range(1, 9)]
 COMPLEX_WAVELETS = [f"cgau{i}" for i in range(1, 9)] + [
@@ -78,8 +83,6 @@ def test_cwt_grad():
 
 
 # --- Two-phase API: prepare + apply ---
-
-from jaxwt._cwt import prepare_cwt, apply_cwt
 
 
 def test_apply_cwt_jit():

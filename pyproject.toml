@@ -44,7 +44,16 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
-ignore = ["E501"]
+ignore = [
+    "N816",   # mixedCase variables — cA, cD, cH, cV are wavelet convention
+    "N802",   # mixedCase function names — same reason
+    "N803",   # mixedCase arguments — same reason
+    "N806",   # mixedCase in function — same reason
+]
+
+[tool.ruff.lint.per-file-ignores]
+"jaxwt/__init__.py" = ["F401"]      # re-exports are the point of __init__
+"benchmarks/*" = ["E402"]            # env vars must be set before jax import
 
 [tool.pytest.ini_options]
 testpaths = ["jaxwt/tests"]

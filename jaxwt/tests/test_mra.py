@@ -1,13 +1,10 @@
 """Tests for multiresolution analysis."""
 
-import numpy as np
-import jax
-
-jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
+import numpy as np
 import pytest
 
-from jaxwt._mra import mra, imra, mra2, imra2, mran, imran
+from jaxwt._mra import imra, imra2, imran, mra, mra2, mran
 
 ATOL_RT = 1e-11  # MRA tests are all roundtrip (additivity)
 

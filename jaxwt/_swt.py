@@ -3,11 +3,11 @@
 import math
 from itertools import product
 
-import jax
 import jax.numpy as jnp
+
 from jaxwt._dwt import idwt
+from jaxwt._filters import Wavelet, get_wavelet
 from jaxwt._multidim import idwtn
-from jaxwt._filters import get_wavelet, Wavelet
 
 
 def swt_max_level(input_len):
@@ -173,10 +173,7 @@ def swtn(data, wavelet, level, start_level=0, axes=None, trim_approx=False, norm
     list
         Subband coefficient dictionaries from coarsest to finest level.
     """
-    if axes is None:
-        axes = tuple(range(data.ndim))
-    else:
-        axes = tuple(axes)
+    axes = tuple(range(data.ndim)) if axes is None else tuple(axes)
     w = get_wavelet(wavelet)
     if norm:
         w = Wavelet(*(f / jnp.sqrt(2) for f in w))
@@ -283,9 +280,9 @@ def iswtn(coeffs, wavelet, axes=None, norm=False):
         for firsts in product(*[range(step_size)] * ndim_transform):
             approx = output.copy()
             indices = [slice(None)] * output.ndim
-            even_indices = [slice(None)] * output.ndim
-            odd_indices = [slice(None)] * output.ndim
-            for first, ax in zip(firsts, axes):
+            [slice(None)] * output.ndim
+            [slice(None)] * output.ndim
+            for first, ax in zip(firsts, axes, strict=False):
                 sh = output.shape[ax]
                 indices[ax] = slice(first, sh, step_size)
 
@@ -293,7 +290,7 @@ def iswtn(coeffs, wavelet, axes=None, norm=False):
             ntransforms = 0
             for odds in product(*[(0, 1)] * ndim_transform):
                 odd_even_slices = [slice(None)] * output.ndim
-                for o, first, ax in zip(odds, firsts, axes):
+                for o, first, ax in zip(odds, firsts, axes, strict=False):
                     sh = output.shape[ax]
                     if o:
                         odd_even_slices[ax] = slice(
@@ -307,7 +304,7 @@ def iswtn(coeffs, wavelet, axes=None, norm=False):
                 }
                 details_slice["a" * ndim_transform] = approx[tuple(odd_even_slices)]
                 x = idwtn(details_slice, w, "periodization", axes=axes)
-                for o, ax in zip(odds, axes):
+                for o, ax in zip(odds, axes, strict=False):
                     if o:
                         x = jnp.roll(x, 1, axis=ax)
                 output = output.at[tuple(indices)].add(x)

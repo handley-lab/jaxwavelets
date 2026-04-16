@@ -1,17 +1,14 @@
 """Tests for wavelet packets."""
 
-import numpy as np
-import jax
-
-jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import pywt
+import numpy as np
 import pytest
+import pywt
 
 from jaxwt._packets import (
     wp_decompose,
-    wp_reconstruct,
     wp_decompose_nd,
+    wp_reconstruct,
     wp_reconstruct_nd,
 )
 

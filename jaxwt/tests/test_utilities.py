@@ -1,12 +1,10 @@
 """Tests for filter utilities and partial DWT functions."""
 
-import numpy as np
 import jax
-
-jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import pywt
+import numpy as np
 import pytest
+import pywt
 
 import jaxwt
 
@@ -34,7 +32,7 @@ def test_orthogonal_filter_bank(wavelet):
     w = pywt.Wavelet(wavelet)
     bank_jax = jaxwt.orthogonal_filter_bank(jnp.array(w.rec_lo))
     bank_pywt = pywt.orthogonal_filter_bank(w.rec_lo)
-    for j, p in zip(bank_jax, bank_pywt):
+    for j, p in zip(bank_jax, bank_pywt, strict=False):
         np.testing.assert_allclose(np.array(j), p, atol=ATOL)
 
 
@@ -133,7 +131,9 @@ def test_wavedec2_matches_pywt(wavelet, shape, level):
     coeffs_j = jaxwt.wavedec2(jnp.array(x_np), wavelet, level=level)
     coeffs_p = pywt.wavedec2(x_np, wavelet, level=level)
     np.testing.assert_allclose(np.array(coeffs_j[0]), coeffs_p[0], atol=ATOL)
-    for (cH_j, cV_j, cD_j), (cH_p, cV_p, cD_p) in zip(coeffs_j[1:], coeffs_p[1:]):
+    for j_detail, p_detail in zip(coeffs_j[1:], coeffs_p[1:], strict=False):
+        cH_j, cV_j, cD_j = j_detail
+        cH_p, cV_p, cD_p = p_detail
         np.testing.assert_allclose(np.array(cH_j), cH_p, atol=ATOL)
         np.testing.assert_allclose(np.array(cV_j), cV_p, atol=ATOL)
         np.testing.assert_allclose(np.array(cD_j), cD_p, atol=ATOL)

@@ -1,14 +1,11 @@
 """Tests for stationary wavelet transform."""
 
-import numpy as np
-import jax
-
-jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import pywt
+import numpy as np
 import pytest
+import pywt
 
-from jaxwt._swt import swt, iswt, swtn, iswtn, swt2, iswt2
+from jaxwt._swt import iswt, iswt2, iswtn, swt, swt2, swtn
 
 WAVELETS = ["haar", "db2", "db4", "sym4"]
 ATOL = 1e-14
@@ -24,7 +21,7 @@ def test_swt_matches_pywt(wavelet, N, level):
     x_np = np.random.RandomState(0).randn(N)
     coeffs_jax = swt(jnp.array(x_np), wavelet, level=level)
     coeffs_pywt = pywt.swt(x_np, wavelet, level=level)
-    for (cA_j, cD_j), (cA_p, cD_p) in zip(coeffs_jax, coeffs_pywt):
+    for (cA_j, cD_j), (cA_p, cD_p) in zip(coeffs_jax, coeffs_pywt, strict=False):
         np.testing.assert_allclose(np.array(cA_j), cA_p, atol=ATOL)
         np.testing.assert_allclose(np.array(cD_j), cD_p, atol=ATOL)
 
@@ -54,7 +51,7 @@ def test_swt_trim_approx(wavelet="db2", N=16, level=2):
     x_np = np.random.RandomState(0).randn(N)
     coeffs_jax = swt(jnp.array(x_np), wavelet, level=level, trim_approx=True)
     coeffs_pywt = pywt.swt(x_np, wavelet, level=level, trim_approx=True)
-    for j, p in zip(coeffs_jax, coeffs_pywt):
+    for j, p in zip(coeffs_jax, coeffs_pywt, strict=False):
         np.testing.assert_allclose(np.array(j), p, atol=ATOL)
 
 
@@ -68,7 +65,7 @@ def test_swtn_matches_pywt(wavelet, shape):
     level = 2
     cj = swtn(jnp.array(x_np), wavelet, level=level)
     cp = pywt.swtn(x_np, wavelet, level=level)
-    for jd, pd in zip(cj, cp):
+    for jd, pd in zip(cj, cp, strict=False):
         for key in jd:
             np.testing.assert_allclose(np.array(jd[key]), pd[key], atol=ATOL)
 
@@ -89,7 +86,7 @@ def test_swt2_matches_pywt_swtn(wavelet):
     x_np = np.random.RandomState(0).randn(16, 16)
     cj = swt2(jnp.array(x_np), wavelet, level=2)
     cp = pywt.swtn(x_np, wavelet, level=2)
-    for jd, pd in zip(cj, cp):
+    for jd, pd in zip(cj, cp, strict=False):
         for key in jd:
             np.testing.assert_allclose(np.array(jd[key]), pd[key], atol=ATOL)
 
@@ -109,7 +106,7 @@ def test_swtn_3d_matches_pywt():
     x_np = np.random.RandomState(0).randn(8, 8, 8)
     cj = swtn(jnp.array(x_np), "haar", level=1)
     cp = pywt.swtn(x_np, "haar", level=1)
-    for jd, pd in zip(cj, cp):
+    for jd, pd in zip(cj, cp, strict=False):
         for key in jd:
             np.testing.assert_allclose(np.array(jd[key]), pd[key], atol=ATOL)
 
@@ -127,7 +124,7 @@ def test_swtn_subset_axes():
     axes = (0, 2)
     cj = swtn(jnp.array(x_np), "haar", level=1, axes=axes)
     cp = pywt.swtn(x_np, "haar", level=1, axes=axes)
-    for jd, pd in zip(cj, cp):
+    for jd, pd in zip(cj, cp, strict=False):
         for key in jd:
             np.testing.assert_allclose(np.array(jd[key]), pd[key], atol=ATOL)
 

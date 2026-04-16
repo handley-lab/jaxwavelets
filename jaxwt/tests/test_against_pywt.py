@@ -1,13 +1,12 @@
 """Tests verifying jaxwt matches pywt to machine precision."""
 
-import numpy as np
-import jax
-
-jax.config.update("jax_enable_x64", True)
-import jax.numpy as jnp
-import pywt
-import pytest
 from functools import partial
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pytest
+import pywt
 
 import jaxwt
 
@@ -69,7 +68,7 @@ def test_wavedecn_matches_pywt(wavelet, shape, level, mode):
     coeffs_jax = jaxwt.wavedecn(jnp.array(x_np), wavelet, mode=mode, level=level)
     coeffs_pywt = pywt.wavedecn(x_np, wavelet, mode=mode, level=level)
     np.testing.assert_allclose(np.array(coeffs_jax.approx), coeffs_pywt[0], atol=ATOL)
-    for jax_d, pywt_d in zip(coeffs_jax.details, coeffs_pywt[1:]):
+    for jax_d, pywt_d in zip(coeffs_jax.details, coeffs_pywt[1:], strict=False):
         for key in jax_d:
             np.testing.assert_allclose(np.array(jax_d[key]), pywt_d[key], atol=ATOL)
 

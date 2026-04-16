@@ -1,12 +1,10 @@
 """Tests for thresholding functions."""
 
-import numpy as np
 import jax
-
-jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-import pywt
+import numpy as np
 import pytest
+import pywt
 
 from jaxwt._thresholding import threshold, threshold_firm
 
