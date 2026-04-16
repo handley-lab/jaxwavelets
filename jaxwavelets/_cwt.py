@@ -71,7 +71,6 @@ def _wavelet_from_name(name):
     for prefix, bounds in _PARAM_FAMILIES.items():
         if name.startswith(prefix):
             return ContinuousWavelet(name, *bounds, True)
-    return _WAVELET_SPECS[name]
 
 
 def _parse_params(name, prefix):
