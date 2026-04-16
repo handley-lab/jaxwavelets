@@ -51,10 +51,6 @@ jobs:
       - name: Format check
         run: ruff format --check jaxwavelets/
 
-      - name: Debug JAX config
-        run: |
-          python -c "import jax; print('JAX version:', jax.__version__); print('x64 enabled:', jax.config.x64_enabled); import jax.numpy as jnp; print('default dtype:', jnp.ones(1).dtype)"
-
       - name: Test with coverage
         run: |
           pip install pytest-cov
