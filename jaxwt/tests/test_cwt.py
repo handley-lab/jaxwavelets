@@ -11,7 +11,8 @@ from jaxwt._cwt import cwt, wavefun, integrate_wavelet, central_frequency
 REAL_WAVELETS = ['morl', 'mexh'] + [f'gaus{i}' for i in range(1, 9)]
 COMPLEX_WAVELETS = [f'cgau{i}' for i in range(1, 9)] + ['cmor1.5-1.0', 'shan1.5-1.0', 'fbsp2-1.5-1.0']
 ALL_WAVELETS = REAL_WAVELETS + COMPLEX_WAVELETS
-ATOL = 1e-10
+ATOL = 2e-14       # wavefun/integrate: fbsp sinc^m has ~1.5e-14 inherent precision loss
+ATOL_CWT = 5e-14   # CWT coefficients: amplified through convolution pipeline
 
 
 @pytest.mark.parametrize('wavelet', ALL_WAVELETS)
@@ -42,7 +43,7 @@ def test_cwt_real_matches_pywt(wavelet):
     scales = np.array([1., 2., 4., 8.])
     coef_jax, freq_jax = cwt(jnp.array(x), scales, wavelet)
     coef_pywt, freq_pywt = pywt.cwt(x, scales, wavelet)
-    np.testing.assert_allclose(np.array(coef_jax), coef_pywt, atol=ATOL)
+    np.testing.assert_allclose(np.array(coef_jax), coef_pywt, atol=ATOL_CWT)
     np.testing.assert_allclose(np.array(freq_jax), freq_pywt, rtol=1e-6)
 
 
@@ -52,7 +53,7 @@ def test_cwt_complex_matches_pywt(wavelet):
     scales = np.array([1., 2., 4., 8.])
     coef_jax, _ = cwt(jnp.array(x), scales, wavelet)
     coef_pywt, _ = pywt.cwt(x, scales, wavelet)
-    np.testing.assert_allclose(np.array(coef_jax), coef_pywt, atol=ATOL)
+    np.testing.assert_allclose(np.array(coef_jax), coef_pywt, atol=ATOL_CWT)
 
 
 def test_cwt_fft_method():

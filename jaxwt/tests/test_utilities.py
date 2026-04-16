@@ -9,7 +9,8 @@ import pytest
 import jaxwt
 
 WAVELETS = ['haar', 'db2', 'db4', 'db8', 'sym4', 'coif2']
-ATOL = 1e-11
+ATOL = 1e-14
+ATOL_RT = 1e-11
 
 
 # --- qmf ---
@@ -107,7 +108,7 @@ def test_idwt2_roundtrip(wavelet, shape):
     x = jnp.array(np.random.RandomState(0).randn(*shape))
     coeffs = jaxwt.dwt2(x, wavelet)
     rec = jaxwt.idwt2(coeffs, wavelet)
-    np.testing.assert_allclose(np.array(rec[:shape[0], :shape[1]]), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec[:shape[0], :shape[1]]), np.array(x), atol=ATOL_RT)
 
 
 @pytest.mark.parametrize('wavelet', ['haar', 'db4', 'sym4'])
@@ -131,7 +132,7 @@ def test_waverec2_roundtrip(wavelet, shape):
     coeffs = jaxwt.wavedec2(x, wavelet)
     rec = jaxwt.waverec2(coeffs, wavelet)
     # waverec2 may produce larger output for odd shapes (matches pywt behavior)
-    np.testing.assert_allclose(np.array(rec[tuple(slice(s) for s in shape)]), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec[tuple(slice(s) for s in shape)]), np.array(x), atol=ATOL_RT)
 
 
 # --- upcoef take ---

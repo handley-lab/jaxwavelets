@@ -9,7 +9,8 @@ import pytest
 from jaxwt._packets import wp_decompose, wp_reconstruct, wp_decompose_nd, wp_reconstruct_nd
 
 WAVELETS = ['haar', 'db2', 'db4']
-ATOL = 1e-11
+ATOL = 1e-14
+ATOL_RT = 1e-11
 
 
 # --- 1D leaf values match pywt ---
@@ -32,7 +33,7 @@ def test_wp_roundtrip(wavelet, N):
     x = jnp.array(np.random.RandomState(0).randn(N))
     leaves, shapes = wp_decompose(x, wavelet, maxlevel=2)
     rec = wp_reconstruct(leaves, wavelet)
-    np.testing.assert_allclose(np.array(rec[:N]), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec[:N]), np.array(x), atol=ATOL_RT)
 
 
 # --- nD leaf values ---
@@ -55,7 +56,7 @@ def test_wp_nd_roundtrip(wavelet):
     axes = (0, 1)
     leaves, shapes = wp_decompose_nd(x, wavelet, maxlevel=1, axes=axes)
     rec = wp_reconstruct_nd(leaves, wavelet, axes=axes)
-    np.testing.assert_allclose(np.array(rec[:16, :16]), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec[:16, :16]), np.array(x), atol=ATOL_RT)
 
 
 # --- Leaf count ---

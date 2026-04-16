@@ -9,7 +9,8 @@ import pytest
 from jaxwt._swt import swt, iswt, swtn, iswtn, swt2, iswt2
 
 WAVELETS = ['haar', 'db2', 'db4', 'sym4']
-ATOL = 1e-11
+ATOL = 1e-14
+ATOL_RT = 1e-11
 
 
 @pytest.mark.parametrize('wavelet', WAVELETS)
@@ -33,7 +34,7 @@ def test_iswt_roundtrip(wavelet, N):
     level = min(3, int(np.log2(N)))
     coeffs = swt(x, wavelet, level=level)
     rec = iswt(coeffs, wavelet)
-    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
 
 
 @pytest.mark.parametrize('wavelet', WAVELETS)
@@ -76,7 +77,7 @@ def test_iswtn_roundtrip(wavelet, shape):
     level = 2
     coeffs = swtn(x, wavelet, level=level)
     rec = iswtn(coeffs, wavelet)
-    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
 
 
 @pytest.mark.parametrize('wavelet', ['haar', 'db2'])
@@ -95,7 +96,7 @@ def test_iswt2_roundtrip(wavelet):
     x = jnp.array(np.random.RandomState(0).randn(16, 16))
     coeffs = swt2(x, wavelet, level=2)
     rec = iswt2(coeffs, wavelet)
-    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
 
 
 # --- 3D SWT ---
@@ -113,7 +114,7 @@ def test_iswtn_3d_roundtrip():
     x = jnp.array(np.random.RandomState(0).randn(8, 8, 8))
     coeffs = swtn(x, 'haar', level=1)
     rec = iswtn(coeffs, 'haar')
-    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
 
 
 def test_swtn_subset_axes():
@@ -133,4 +134,4 @@ def test_iswtn_subset_axes_roundtrip():
     axes = (0, 2)
     coeffs = swtn(x, 'haar', level=1, axes=axes)
     rec = iswtn(coeffs, 'haar', axes=axes)
-    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL)
+    np.testing.assert_allclose(np.array(rec), np.array(x), atol=ATOL_RT)
