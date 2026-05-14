@@ -117,6 +117,10 @@ Coefficients are JAX pytrees, so `jax.tree_util.tree_map` works directly on them
 - **Pytree coefficients** — all outputs are JAX-compatible pytrees
 - **Validated against PyWavelets** — machine-precision numerical agreement
 
+## How this library was generated
+
+jaxwavelets was produced in a single AI-assisted [Claude Code](https://www.anthropic.com/claude-code) session using a reference-guided-translation workflow: PyWavelets is the numerical oracle, every test asserts equivalence against PyWavelets to machine precision, and implementation proceeded phase-by-phase with adversarial external-LLM review (`mcp__llm__review`). The full account — what worked, what required human judgment, what the agent did badly and how it was caught — is in [`CASE_STUDY.md`](CASE_STUDY.md). The same workflow was subsequently applied to [jaxPOSEIDON](https://github.com/handley-lab/jaxPOSEIDON).
+
 ## Acknowledgements
 
 jaxwavelets extends the [PyWavelets](https://pywavelets.readthedocs.io/) library to JAX. PyWavelets provides the mathematical reference implementation and filter coefficient database used for validation.
